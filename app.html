@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#0f172a"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="مولدتي"/>
+<title>مولدتي v2.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+body{font-family:'Cairo',sans-serif;direction:rtl;background:#f8fafc;overscroll-behavior:none}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:4px}
+input,select,textarea{font-family:'Cairo',sans-serif}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fade{animation:fadeIn .25s ease}
+.spin{animation:spin .7s linear infinite}
+.inp{width:100%;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:11px 14px;font-size:14px;color:#0f172a;outline:none;transition:.2s}
+.inp:focus{border-color:#6366f1;background:#fff;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.sel{width:100%;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:11px 14px;font-size:14px;color:#0f172a;outline:none;cursor:pointer}
+.sel:focus{border-color:#6366f1}
+.btn{border:none;cursor:pointer;font-family:'Cairo',sans-serif;font-weight:700;border-radius:12px;transition:.2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn:active{transform:scale(.97)}
+.btn-v{background:#6366f1;color:#fff;padding:12px 20px;font-size:14px;box-shadow:0 4px 14px rgba(99,102,241,.3)}
+.btn-v:hover{background:#4f46e5}
+.btn-v:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-r{background:#ef4444;color:#fff;padding:12px 20px;font-size:14px;box-shadow:0 4px 14px rgba(239,68,68,.25)}
+.btn-g{background:#f1f5f9;color:#64748b;padding:11px 20px;font-size:14px}
+.card{background:#fff;border-radius:16px;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(15,23,42,.06)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useRef}=React;
+
+// ── Supabase ──
+const SB="https://pnifkbnhvmhwysyqhkwd.supabase.co";
+const SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuaWZrYm5odm1od3lzeXFoa3dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczNjkxMDEsImV4cCI6MjA5Mjk0NTEwMX0.6R3-arOCvnj6RLCrx9_fj0NX-j9su1bEPZRVlnRpTsc";
+const H={"Content-Type":"application/json","apikey":SK,"Authorization":`Bearer ${SK}`,"Prefer":"return=representation"};
+const db=t=>`${SB}/rest/v1/${t}`;
+const GET=async(t,q="")=>{const r=await fetch(`${db(t)}?${q}`,{headers:H});if(!r.ok)throw new Error(await r.text());return r.json()};
+const POST=async(t,b)=>{const r=await fetch(db(t),{method:"POST",headers:H,body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()};
+const PATCH=async(t,id,b)=>{const r=await fetch(`${db(t)}?id=eq.${id}`,{method:"PATCH",headers:H,body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()};
+const DEL=async(t,id)=>{const r=await fetch(`${db(t)}?id=eq.${id}`,{method:"DELETE",headers:H});if(!r.ok)throw new Error(await r.text())};
+
+// ── Helpers ──
+const iqd=n=>new Intl.NumberFormat("ar-IQ").format(n||0)+" د.ع";
+const MO=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+const fmy=my=>{if(!my)return"";const[y,m]=my.split("-");return`${MO[+m-1]} ${y}`};
+const nowM=()=>new Date().toISOString().slice(0,7);
+
+// ── Toast ──
+function Toast({items,remove}){
+  return(
+    <div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",zIndex:9999,display:"flex",flexDirection:"column",gap:8,pointerEvents:"none"}}>
+      {items.map(t=>(
+        <div key={t.id} style={{background:t.type==="ok"?"#22c55e":t.type==="err"?"#ef4444":"#6366f1",color:"#fff",padding:"10px 20px",borderRadius:12,fontWeight:700,fontSize:13,boxShadow:"0 8px 24px rgba(0,0,0,.2)",animation:"toastIn .3s ease",whiteSpace:"nowrap"}}>
+          {t.type==="ok"?"✓ ":t.type==="err"?"✕ ":"• "}{t.msg}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Confirm Dialog ──
+function Confirm({msg,sub,onOk,onNo,loading}){
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{position:"absolute",inset:0,background:"rgba(15,23,42,.6)",backdropFilter:"blur(6px)"}} onClick={onNo}/>
+      <div className="card fade" style={{position:"relative",width:"100%",maxWidth:340,padding:24,textAlign:"center"}}>
+        <div style={{width:56,height:56,background:"#fff5f5",borderRadius:16,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,margin:"0 auto 14px"}}>🗑️</div>
+        <div style={{fontWeight:800,fontSize:16,color:"#0f172a",marginBottom:6}}>{msg}</div>
+        {sub&&<div style={{color:"#94a3b8",fontSize:13,marginBottom:20}}>{sub}</div>}
+        <div style={{display:"flex",gap:10,marginTop:20}}>
+          <button onClick={onNo} className="btn btn-g" style={{flex:1}}>إلغاء</button>
+          <button onClick={onOk} disabled={loading} className="btn btn-r" style={{flex:1}}>{loading?"جاري...":"حذف"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Modal ──
+function Modal({title,icon,onClose,children}){
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:100,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{position:"absolute",inset:0,background:"rgba(15,23,42,.5)",backdropFilter:"blur(4px)"}} onClick={onClose}/>
+      <div style={{position:"relative",background:"#fff",width:"100%",maxWidth:460,borderRadius:"24px 24px 0 0",maxHeight:"92vh",display:"flex",flexDirection:"column",animation:"slideRight .25s ease"}}>
+        <div style={{padding:"18px 20px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+          {icon&&<span style={{fontSize:20}}>{icon}</span>}
+          <span style={{fontWeight:800,fontSize:17,color:"#0f172a",flex:1}}>{title}</span>
+          <button onClick={onClose} className="btn btn-g" style={{padding:"6px 10px",borderRadius:10,fontSize:18,lineHeight:1}}>✕</button>
+        </div>
+        <div style={{padding:20,overflowY:"auto",flex:1}}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// ── Sidebar ──
+function Sidebar({user,tab,setTab,navItems,onLogout,onClose,gens}){
+  const RLBL={owner:"مالك",admin:"مدير",worker:"عامل"};
+  const RCLR={owner:"#7c3aed",admin:"#2563eb",worker:"#16a34a"};
+  const RBGL={owner:"#faf5ff",admin:"#eff6ff",worker:"#f0fdf4"};
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:150}}>
+      <div style={{position:"absolute",inset:0,background:"rgba(15,23,42,.5)",backdropFilter:"blur(4px)"}} onClick={onClose}/>
+      <div style={{position:"absolute",right:0,top:0,bottom:0,width:280,background:"#fff",display:"flex",flexDirection:"column",animation:"slideRight .25s ease",boxShadow:"-8px 0 32px rgba(0,0,0,.12)"}}>
+        {/* Profile */}
+        <div style={{padding:"32px 20px 20px",background:"linear-gradient(135deg,#6366f1,#4f46e5)"}}>
+          <div style={{width:60,height:60,background:"rgba(255,255,255,.2)",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,marginBottom:12}}>
+            {user.role==="owner"?"👑":user.role==="admin"?"💼":"🔧"}
+          </div>
+          <div style={{fontWeight:800,fontSize:16,color:"#fff",marginBottom:4}}>{user.name}</div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{background:"rgba(255,255,255,.2)",color:"#fff",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:700}}>{RLBL[user.role]}</span>
+            <span style={{color:"rgba(255,255,255,.7)",fontSize:12}}>@{user.username}</span>
+          </div>
+          {user.assigned_generator_id&&(()=>{const g=gens.find(x=>x.id===user.assigned_generator_id);return g?<div style={{marginTop:8,color:"rgba(255,255,255,.8)",fontSize:12}}>⚡ {g.name}</div>:null})()}
+        </div>
+        {/* Nav */}
+        <div style={{flex:1,padding:"12px 12px",overflowY:"auto"}}>
+          {navItems.map(item=>{
+            const active=tab===item.id;
+            return(
+              <button key={item.id} onClick={()=>{setTab(item.id);onClose()}} className="btn"
+                style={{width:"100%",justifyContent:"flex-start",gap:12,padding:"12px 14px",borderRadius:12,marginBottom:4,
+                  background:active?"#eff1fe":"transparent",
+                  color:active?"#4f46e5":"#475569",
+                  fontWeight:active?800:600,fontSize:14}}>
+                <span style={{fontSize:20,width:24,textAlign:"center"}}>{item.icon}</span>
+                {item.label}
+                {active&&<span style={{marginRight:"auto",marginLeft:0,width:6,height:6,background:"#6366f1",borderRadius:"50%"}}/>}
+              </button>
+            );
+          })}
+        </div>
+        {/* Logout */}
+        <div style={{padding:"12px 12px 28px",borderTop:"1px solid #f1f5f9"}}>
+          <button onClick={onLogout} className="btn" style={{width:"100%",justifyContent:"flex-start",gap:12,padding:"12px 14px",borderRadius:12,background:"#fff5f5",color:"#ef4444",fontWeight:700,fontSize:14}}>
+            <span style={{fontSize:20}}>🚪</span> تسجيل الخروج
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Field ──
+const F=({label,hint,children})=>(
+  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+    <label style={{fontSize:12,fontWeight:700,color:"#475569"}}>{label}{hint&&<span style={{color:"#6366f1",fontWeight:500,marginRight:4}}>{hint}</span>}</label>
+    {children}
+  </div>
+);
+
+// ── LOGIN ──────────────────────────────────────────────────────
+function Login({onLogin,loading,error}){
+  const [u,setU]=useState(""); const [p,setP]=useState(""); const [show,setShow]=useState(false);
+  return(
+    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",background:"#f0f9ff"}}>
+      {/* Top Section - Brand */}
+      <div style={{background:"linear-gradient(135deg,#0ea5e9,#0284c7,#0369a1)",flex:"0 0 45%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"40px 20px 60px",position:"relative",overflow:"hidden"}}>
+        {/* Decorative circles */}
+        <div style={{position:"absolute",top:-60,right:-60,width:200,height:200,background:"rgba(255,255,255,.08)",borderRadius:"50%"}}/>
+        <div style={{position:"absolute",bottom:-40,left:-40,width:160,height:160,background:"rgba(255,255,255,.06)",borderRadius:"50%"}}/>
+        <div style={{position:"absolute",top:"30%",left:"10%",width:80,height:80,background:"rgba(255,255,255,.05)",borderRadius:"50%"}}/>
+        {/* Logo */}
+        <div style={{position:"relative",textAlign:"center"}}>
+          <div style={{width:90,height:90,background:"rgba(255,255,255,.2)",borderRadius:28,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",backdropFilter:"blur(10px)",border:"2px solid rgba(255,255,255,.3)",boxShadow:"0 20px 40px rgba(0,0,0,.2)"}}>
+            <span style={{fontSize:44}}>⚡</span>
+          </div>
+          <h1 style={{color:"#fff",fontWeight:900,fontSize:38,margin:"0 0 8px",textShadow:"0 2px 10px rgba(0,0,0,.2)",letterSpacing:"-0.5px"}}>مولدتي</h1>
+          <p style={{color:"rgba(186,230,254,.9)",fontSize:14,margin:0,fontWeight:500}}>نظام إدارة المولدات الأهلية</p>
+          {/* Stats bar */}
+          <div style={{display:"flex",gap:24,marginTop:28,justifyContent:"center"}}>
+            {[["⚡","مولدات"],["👥","مستخدمون"],["📊","تقارير"]].map(([ic,lb],i)=>(
+              <div key={i} style={{textAlign:"center"}}>
+                <div style={{fontSize:20,marginBottom:2}}>{ic}</div>
+                <div style={{color:"rgba(186,230,254,.8)",fontSize:11,fontWeight:600}}>{lb}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Section - Form */}
+      <div style={{flex:1,background:"#fff",borderRadius:"32px 32px 0 0",marginTop:-24,padding:"32px 24px 40px",boxShadow:"0 -8px 32px rgba(0,0,0,.08)",position:"relative"}}>
+        {/* Handle */}
+        <div style={{width:40,height:4,background:"#e2e8f0",borderRadius:99,margin:"0 auto 28px"}}/>
+        <h2 style={{fontWeight:800,fontSize:22,color:"#0f172a",marginBottom:6}}>مرحباً بك 👋</h2>
+        <p style={{color:"#94a3b8",fontSize:13,marginBottom:24,fontWeight:500}}>سجّل دخولك للمتابعة</p>
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+          {/* Username */}
+          <div>
+            <label style={{display:"block",fontSize:13,fontWeight:700,color:"#374151",marginBottom:8}}>اسم المستخدم</label>
+            <div style={{position:"relative"}}>
+              <span style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",fontSize:18,pointerEvents:"none"}}>👤</span>
+              <input value={u} onChange={e=>setU(e.target.value)} placeholder="أدخل اسم المستخدم"
+                style={{width:"100%",background:"#f8fafc",border:"2px solid #e2e8f0",borderRadius:14,padding:"13px 46px 13px 14px",fontSize:15,color:"#0f172a",outline:"none",boxSizing:"border-box",fontFamily:"Cairo",transition:".2s",fontWeight:500}}
+                onFocus={e=>{e.target.style.borderColor="#0ea5e9";e.target.style.background="#f0f9ff";e.target.style.boxShadow="0 0 0 4px rgba(14,165,233,.1)"}}
+                onBlur={e=>{e.target.style.borderColor="#e2e8f0";e.target.style.background="#f8fafc";e.target.style.boxShadow="none"}}/>
+            </div>
+          </div>
+          {/* Password */}
+          <div>
+            <label style={{display:"block",fontSize:13,fontWeight:700,color:"#374151",marginBottom:8}}>كلمة المرور</label>
+            <div style={{position:"relative"}}>
+              <span style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",fontSize:18,pointerEvents:"none"}}>🔒</span>
+              <input type={show?"text":"password"} value={p} onChange={e=>setP(e.target.value)} onKeyDown={e=>e.key==="Enter"&&onLogin(u,p)} placeholder="أدخل كلمة المرور"
+                style={{width:"100%",background:"#f8fafc",border:"2px solid #e2e8f0",borderRadius:14,padding:"13px 46px 13px 46px",fontSize:15,color:"#0f172a",outline:"none",boxSizing:"border-box",fontFamily:"Cairo",transition:".2s",fontWeight:500}}
+                onFocus={e=>{e.target.style.borderColor="#0ea5e9";e.target.style.background="#f0f9ff";e.target.style.boxShadow="0 0 0 4px rgba(14,165,233,.1)"}}
+                onBlur={e=>{e.target.style.borderColor="#e2e8f0";e.target.style.background="#f8fafc";e.target.style.boxShadow="none"}}/>
+              <button onClick={()=>setShow(s=>!s)} style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#94a3b8",padding:0}}>{show?"🙈":"👁️"}</button>
+            </div>
+          </div>
+          {/* Error */}
+          {error&&(
+            <div style={{background:"#fef2f2",border:"2px solid #fecaca",borderRadius:12,padding:"12px 16px",display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:18,flexShrink:0}}>⚠️</span>
+              <span style={{color:"#dc2626",fontSize:13,fontWeight:600}}>{error}</span>
+            </div>
+          )}
+          {/* Button */}
+          <button onClick={()=>onLogin(u,p)} disabled={loading}
+            style={{width:"100%",background:loading?"#7dd3fc":"linear-gradient(135deg,#0ea5e9,#0284c7)",color:"#fff",border:"none",borderRadius:16,padding:"15px",fontSize:16,fontWeight:800,cursor:loading?"not-allowed":"pointer",fontFamily:"Cairo",boxShadow:"0 8px 24px rgba(14,165,233,.35)",transition:".2s",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginTop:4}}>
+            {loading
+              ?<><span className="spin" style={{width:20,height:20,border:"2.5px solid rgba(255,255,255,.4)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",flexShrink:0}}/>جاري التحقق...</>
+              :<>تسجيل الدخول <span style={{fontSize:20}}>←</span></>}
+          </button>
+        </div>
+        {/* Footer */}
+        <div style={{textAlign:"center",marginTop:24,color:"#cbd5e1",fontSize:12}}>مولدتي © 2025 — جميع الحقوق محفوظة</div>
+      </div>
+    </div>
+  );
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────
+function Dashboard({gens,subs,user}){
+  const rev=subs.reduce((a,s)=>a+(s.amount_received||0),0);
+  const exp=subs.reduce((a,s)=>a+(s.amount_expected||0),0);
+  const pend=exp-rev;
+  const pct=exp>0?Math.round((rev/exp)*100):0;
+  return(
+    <div className="fade" style={{display:"flex",flexDirection:"column",gap:16}}>
+      {/* Welcome */}
+      <div style={{background:"linear-gradient(135deg,#6366f1,#4f46e5)",borderRadius:20,padding:"20px 18px",color:"#fff",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:-20,left:-20,width:120,height:120,background:"rgba(255,255,255,.08)",borderRadius:"50%"}}/>
+        <div style={{position:"absolute",bottom:-30,right:-10,width:100,height:100,background:"rgba(255,255,255,.06)",borderRadius:"50%"}}/>
+        <div style={{position:"relative"}}>
+          <div style={{fontSize:13,color:"rgba(255,255,255,.7)",marginBottom:2}}>أهلاً بك،</div>
+          <div style={{fontWeight:900,fontSize:20,marginBottom:12}}>{user.name} 👋</div>
+          <div style={{fontWeight:500,fontSize:12,color:"rgba(255,255,255,.7)",marginBottom:4}}>إجمالي الإيرادات</div>
+          <div style={{fontWeight:900,fontSize:26}}>{iqd(rev)}</div>
+          <div style={{marginTop:10,height:6,background:"rgba(255,255,255,.2)",borderRadius:99,overflow:"hidden"}}>
+            <div style={{height:"100%",width:`${pct}%`,background:"rgba(255,255,255,.8)",borderRadius:99}}/>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+            <span style={{color:"rgba(255,255,255,.7)",fontSize:11}}>التحصيل {pct}%</span>
+            <span style={{color:"rgba(255,255,255,.7)",fontSize:11}}>متبقي {iqd(pend)}</span>
+          </div>
+        </div>
+      </div>
+      {/* Stats */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        {[
+          {icon:"⚡",label:"المولدات",val:gens.length,bg:"#eff1fe",c:"#4f46e5"},
+          {icon:"📋",label:"السجلات",val:subs.length,bg:"#f0fdf4",c:"#16a34a"},
+          {icon:"💰",label:"المحصّل",val:iqd(rev),bg:"#f0fdf4",c:"#15803d"},
+          {icon:"⏳",label:"المتبقي",val:iqd(pend),bg:"#fffbeb",c:"#b45309"},
+        ].map((s,i)=>(
+          <div key={i} className="card" style={{padding:14,display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:40,height:40,background:s.bg,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{s.icon}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{color:"#94a3b8",fontSize:11,fontWeight:600}}>{s.label}</div>
+              <div style={{fontWeight:800,color:s.c,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.val}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* Generators */}
+      {gens.length>0&&(
+        <div>
+          <div style={{fontWeight:800,fontSize:15,color:"#1e293b",marginBottom:10}}>المولدات</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {gens.map(g=>{
+              const gs=subs.filter(s=>s.generator_id===g.id);
+              const gr=gs.reduce((a,s)=>a+(s.amount_received||0),0);
+              const ge=gs.reduce((a,s)=>a+(s.amount_expected||0),0);
+              const gp=ge>0?Math.round((gr/ge)*100):0;
+              return(
+                <div key={g.id} className="card" style={{padding:14}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                    <div>
+                      <div style={{fontWeight:700,fontSize:14,color:"#0f172a"}}>{g.name}</div>
+                      {g.location&&<div style={{color:"#94a3b8",fontSize:12,marginTop:1}}>📍 {g.location}</div>}
+                    </div>
+                    <div style={{textAlign:"left"}}>
+                      <div style={{fontWeight:800,color:"#4f46e5",fontSize:13}}>{iqd(gr)}</div>
+                      <div style={{color:"#94a3b8",fontSize:11}}>{gs.length} سجل</div>
+                    </div>
+                  </div>
+                  <div style={{height:5,background:"#f1f5f9",borderRadius:99,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${gp}%`,background:"linear-gradient(90deg,#6366f1,#818cf8)",borderRadius:99}}/>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+                    <span style={{color:"#94a3b8",fontSize:11}}>{iqd(g.price_per_ampere_iqd)}/أمبير</span>
+                    <span style={{color:"#6366f1",fontSize:11,fontWeight:700}}>{gp}%</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── GENERATORS ────────────────────────────────────────────────
+function Generators({gens,users,reload,me,toast}){
+  const [modal,setModal]=useState(false); const [ed,setEd]=useState(null);
+  const [delId,setDelId]=useState(null); const [saving,setSaving]=useState(false);
+  const [delL,setDelL]=useState(false); const [err,setErr]=useState("");
+  const [form,setForm]=useState({name:"",location:"",price_per_ampere_iqd:""});
+  const fv=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const openAdd=()=>{setForm({name:"",location:"",price_per_ampere_iqd:""});setEd(null);setErr("");setModal(true)};
+  const openEdit=g=>{setForm({name:g.name,location:g.location||"",price_per_ampere_iqd:String(g.price_per_ampere_iqd)});setEd(g);setErr("");setModal(true)};
+  const save=async()=>{
+    if(!form.name.trim()||!form.price_per_ampere_iqd){setErr("اسم المولدة والسعر مطلوبان");return}
+    const price=Number(form.price_per_ampere_iqd);
+    if(!price||price<=0){setErr("السعر يجب أن يكون أكبر من صفر");return}
+    setSaving(true);setErr("");
+    try{
+      const pl={name:form.name.trim(),location:form.location.trim(),price_per_ampere_iqd:price,owner_id:me.id};
+      ed?await PATCH("generators",ed.id,pl):await POST("generators",pl);
+      await reload();setModal(false);toast(ed?"تم تعديل المولدة ✓":"تم إضافة المولدة ✓","ok");
+    }catch(e){setErr("خطأ: "+e.message)}finally{setSaving(false)}
+  };
+  const doDel=async()=>{
+    setDelL(true);
+    try{await DEL("generators",delId);await reload();setDelId(null);toast("تم حذف المولدة","ok")}
+    catch(e){toast("خطأ في الحذف","err")}finally{setDelL(false)}
+  };
+  return(
+    <div className="fade" style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div>
+          <div style={{fontWeight:800,fontSize:20,color:"#0f172a"}}>المولدات</div>
+          <div style={{color:"#94a3b8",fontSize:13}}>{gens.length} مولدة مسجلة</div>
+        </div>
+        <button onClick={openAdd} className="btn btn-v" style={{padding:"10px 16px",fontSize:13}}>+ إضافة مولدة</button>
+      </div>
+      {gens.length===0&&(
+        <div className="card" style={{padding:48,textAlign:"center"}}>
+          <div style={{fontSize:48,marginBottom:12}}>⚡</div>
+          <div style={{fontWeight:700,color:"#475569",marginBottom:4}}>لا توجد مولدات بعد</div>
+          <div style={{color:"#94a3b8",fontSize:13}}>اضغط إضافة مولدة للبدء</div>
+        </div>
+      )}
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {gens.map(g=>{
+          const ws=users.filter(u=>u.assigned_generator_id===g.id);
+          return(
+            <div key={g.id} className="card" style={{padding:14}}>
+              <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+                <div style={{width:44,height:44,background:"#eff1fe",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>⚡</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:700,fontSize:15,color:"#0f172a"}}>{g.name}</div>
+                  {g.location&&<div style={{color:"#94a3b8",fontSize:12,marginTop:2}}>📍 {g.location}</div>}
+                  <div style={{display:"flex",gap:8,marginTop:8,flexWrap:"wrap"}}>
+                    <span style={{background:"#eff1fe",color:"#4f46e5",borderRadius:8,padding:"3px 10px",fontSize:12,fontWeight:700}}>{iqd(g.price_per_ampere_iqd)}/أمبير</span>
+                    <span style={{background:"#f0fdf4",color:"#16a34a",borderRadius:8,padding:"3px 10px",fontSize:12,fontWeight:700}}>{ws.length} عامل</span>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                  <button onClick={()=>openEdit(g)} className="btn" style={{width:36,height:36,background:"#eff1fe",color:"#4f46e5",borderRadius:10,padding:0,fontSize:16}}>✏️</button>
+                  <button onClick={()=>setDelId(g.id)} className="btn" style={{width:36,height:36,background:"#fff5f5",color:"#ef4444",borderRadius:10,padding:0,fontSize:16}}>🗑️</button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {modal&&(
+        <Modal title={ed?"تعديل المولدة":"مولدة جديدة"} icon="⚡" onClose={()=>!saving&&setModal(false)}>
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <F label="اسم المولدة *"><input value={form.name} onChange={e=>fv("name",e.target.value)} placeholder="مثال: مولدة حي الرشيد" className="inp"/></F>
+            <F label="الموقع"><input value={form.location} onChange={e=>fv("location",e.target.value)} placeholder="شارع، حي، مدينة" className="inp"/></F>
+            <F label="سعر الأمبير (دينار عراقي) *"><input type="number" value={form.price_per_ampere_iqd} onChange={e=>fv("price_per_ampere_iqd",e.target.value)} placeholder="15000" className="inp"/></F>
+            {err&&<div style={{background:"#fff5f5",border:"1px solid #fecaca",borderRadius:10,padding:"10px 14px",color:"#dc2626",fontSize:13,fontWeight:600}}>{err}</div>}
+            <div style={{display:"flex",gap:10,paddingTop:4}}>
+              <button onClick={()=>setModal(false)} className="btn btn-g" style={{flex:1}}>إلغاء</button>
+              <button onClick={save} disabled={saving} className="btn btn-v" style={{flex:1}}>{saving?"جاري...":(ed?"حفظ التعديل":"إضافة المولدة")}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {delId&&<Confirm msg="حذف المولدة؟" sub="سيتم حذف جميع سجلاتها أيضاً" onOk={doDel} onNo={()=>setDelId(null)} loading={delL}/>}
+    </div>
+  );
+}
+
+// ── USERS ─────────────────────────────────────────────────────
+function Users({users,gens,reload,toast}){
+  const [modal,setModal]=useState(false); const [ed,setEd]=useState(null);
+  const [delId,setDelId]=useState(null); const [showP,setShowP]=useState(false);
+  const [saving,setSaving]=useState(false); const [delL,setDelL]=useState(false); const [err,setErr]=useState("");
+  const [form,setForm]=useState({name:"",username:"",password:"",role:"worker",assigned_generator_id:""});
+  const fv=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const openAdd=()=>{setForm({name:"",username:"",password:"",role:"worker",assigned_generator_id:""});setEd(null);setErr("");setShowP(false);setModal(true)};
+  const openEdit=u=>{setForm({name:u.name,username:u.username,password:"",role:u.role,assigned_generator_id:u.assigned_generator_id||""});setEd(u);setErr("");setShowP(false);setModal(true)};
+  const save=async()=>{
+    if(!form.name.trim()||!form.username.trim()){setErr("الاسم واسم المستخدم مطلوبان");return}
+    if(!ed&&!form.password.trim()){setErr("كلمة المرور مطلوبة");return}
+    const dup=users.find(u=>u.username===form.username.trim()&&(!ed||u.id!==ed.id));
+    if(dup){setErr("اسم المستخدم موجود مسبقاً");return}
+    setSaving(true);setErr("");
+    try{
+      const pl={name:form.name.trim(),username:form.username.trim(),role:form.role,assigned_generator_id:form.assigned_generator_id||null,...(form.password.trim()?{password:form.password.trim()}:{})};
+      ed?await PATCH("users",ed.id,pl):await POST("users",{...pl,password:form.password.trim()});
+      await reload();setModal(false);toast(ed?"تم تعديل المستخدم ✓":"تم إضافة المستخدم ✓","ok");
+    }catch(e){setErr("خطأ: "+e.message)}finally{setSaving(false)}
+  };
+  const doDel=async()=>{
+    setDelL(true);
+    try{await DEL("users",delId);await reload();setDelId(null);toast("تم الحذف","ok")}
+    catch(e){toast("خطأ","err")}finally{setDelL(false)}
+  };
+  const RI={
+    owner:{l:"مالك",bg:"#faf5ff",c:"#7c3aed",i:"👑"},
+    admin:{l:"مدير",bg:"#eff1fe",c:"#4f46e5",i:"💼"},
+    worker:{l:"عامل",bg:"#f0fdf4",c:"#16a34a",i:"🔧"}
+  };
+  return(
+    <div className="fade" style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div>
+          <div style={{fontWeight:800,fontSize:20,color:"#0f172a"}}>المستخدمون</div>
+          <div style={{color:"#94a3b8",fontSize:13}}>{users.length} مستخدم</div>
+        </div>
+        <button onClick={openAdd} className="btn btn-v" style={{padding:"10px 16px",fontSize:13}}>+ إضافة</button>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {users.map(u=>{
+          const ri=RI[u.role]||RI.worker;
+          const gen=gens.find(g=>g.id===u.assigned_generator_id);
+          return(
+            <div key={u.id} className="card" style={{padding:14,display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:44,height:44,background:ri.bg,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{ri.i}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                  <span style={{fontWeight:700,fontSize:14,color:"#0f172a"}}>{u.name}</span>
+                  <span style={{background:ri.bg,color:ri.c,borderRadius:8,padding:"2px 8px",fontSize:11,fontWeight:700}}>{ri.l}</span>
+                </div>
+                <div style={{color:"#94a3b8",fontSize:12,marginTop:2}}>@{u.username}{gen?` · ⚡ ${gen.name}`:""}</div>
+              </div>
+              {u.role!=="owner"&&(
+                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                  <button onClick={()=>openEdit(u)} className="btn" style={{width:36,height:36,background:"#eff1fe",borderRadius:10,padding:0,fontSize:16}}>✏️</button>
+                  <button onClick={()=>setDelId(u.id)} className="btn" style={{width:36,height:36,background:"#fff5f5",borderRadius:10,padding:0,fontSize:16}}>🗑️</button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {modal&&(
+        <Modal title={ed?"تعديل مستخدم":"مستخدم جديد"} icon="👤" onClose={()=>!saving&&setModal(false)}>
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <F label="الاسم الكامل *"><input value={form.name} onChange={e=>fv("name",e.target.value)} placeholder="الاسم الكامل" className="inp"/></F>
+            <F label="اسم الدخول *"><input value={form.username} onChange={e=>fv("username",e.target.value)} placeholder="username" className="inp" style={{direction:"ltr",textAlign:"right"}}/></F>
+            <F label={`كلمة المرور${!ed?" *":""}`} hint={ed?"(اتركه فارغاً للإبقاء)":undefined}>
+              <div style={{position:"relative"}}>
+                <input type={showP?"text":"password"} value={form.password} onChange={e=>fv("password",e.target.value)} placeholder="كلمة المرور" className="inp" style={{paddingLeft:44}}/>
+                <button onClick={()=>setShowP(s=>!s)} style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:16}}>{showP?"🙈":"👁️"}</button>
+              </div>
+            </F>
+            <F label="الصلاحية *"><select value={form.role} onChange={e=>fv("role",e.target.value)} className="sel"><option value="admin">مدير</option><option value="worker">عامل</option></select></F>
+            <F label="المولدة المخصصة"><select value={form.assigned_generator_id} onChange={e=>fv("assigned_generator_id",e.target.value)} className="sel"><option value="">— بدون مولدة —</option>{gens.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}</select></F>
+            {err&&<div style={{background:"#fff5f5",border:"1px solid #fecaca",borderRadius:10,padding:"10px 14px",color:"#dc2626",fontSize:13,fontWeight:600}}>{err}</div>}
+            <div style={{display:"flex",gap:10,paddingTop:4}}>
+              <button onClick={()=>setModal(false)} className="btn btn-g" style={{flex:1}}>إلغاء</button>
+              <button onClick={save} disabled={saving} className="btn btn-v" style={{flex:1}}>{saving?"جاري...":(ed?"حفظ":"إضافة")}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {delId&&<Confirm msg="حذف المستخدم؟" onOk={doDel} onNo={()=>setDelId(null)} loading={delL}/>}
+    </div>
+  );
+}
+
+// ── HISTORY ───────────────────────────────────────────────────
+function History({subs,gens}){
+  const [fG,setFG]=useState("all"); const [fY,setFY]=useState("all");
+  const years=[...new Set(subs.map(s=>s.month_year?.split("-")[0]))].filter(Boolean).sort().reverse();
+  const fil=subs.filter(s=>{
+    if(fG!=="all"&&s.generator_id!==fG)return false;
+    if(fY!=="all"&&!s.month_year?.startsWith(fY))return false;
+    return true;
+  });
+  const byM={};
+  fil.forEach(s=>{if(!byM[s.month_year])byM[s.month_year]={exp:0,rec:0,n:0};byM[s.month_year].exp+=s.amount_expected||0;byM[s.month_year].rec+=s.amount_received||0;byM[s.month_year].n++});
+  const rows=Object.entries(byM).sort((a,b)=>b[0].localeCompare(a[0]));
+  const total=fil.reduce((a,s)=>a+(s.amount_received||0),0);
+  return(
+    <div className="fade" style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div>
+        <div style={{fontWeight:800,fontSize:20,color:"#0f172a"}}>السجل المالي</div>
+        <div style={{color:"#94a3b8",fontSize:13}}>الإيرادات الشهرية</div>
+      </div>
+      <div style={{display:"flex",gap:8}}>
+        <select value={fG} onChange={e=>setFG(e.target.value)} className="sel" style={{flex:1}}><option value="all">كل المولدات</option>{gens.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}</select>
+        <select value={fY} onChange={e=>setFY(e.target.value)} className="sel" style={{flex:1}}><option value="all">كل السنوات</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select>
+      </div>
+      <div style={{background:"linear-gradient(135deg,#6366f1,#4f46e5)",borderRadius:18,padding:"18px 20px",color:"#fff"}}>
+        <div style={{fontSize:12,color:"rgba(255,255,255,.7)",marginBottom:4}}>إجمالي الإيرادات المصفاة</div>
+        <div style={{fontWeight:900,fontSize:26}}>{iqd(total)}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginTop:4}}>{fil.length} سجل</div>
+      </div>
+      {rows.length===0&&<div className="card" style={{padding:40,textAlign:"center"}}><div style={{color:"#94a3b8"}}>لا توجد بيانات</div></div>}
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {rows.map(([my,d])=>{
+          const pct=d.exp>0?Math.round((d.rec/d.exp)*100):0;
+          return(
+            <div key={my} className="card" style={{padding:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div>
+                  <div style={{fontWeight:700,fontSize:15,color:"#0f172a"}}>{fmy(my)}</div>
+                  <div style={{color:"#94a3b8",fontSize:12}}>{d.n} مشترك</div>
+                </div>
+                <span style={{background:pct>=100?"#f0fdf4":"#fffbeb",color:pct>=100?"#15803d":"#b45309",borderRadius:10,padding:"4px 12px",fontSize:13,fontWeight:800}}>{pct}%</span>
+              </div>
+              <div style={{height:6,background:"#f1f5f9",borderRadius:99,overflow:"hidden",marginBottom:10}}>
+                <div style={{height:"100%",width:`${pct}%`,background:pct>=100?"linear-gradient(90deg,#22c55e,#16a34a)":"linear-gradient(90deg,#6366f1,#818cf8)",borderRadius:99}}/>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,textAlign:"center"}}>
+                <div style={{background:"#f8fafc",borderRadius:10,padding:"8px 4px"}}><div style={{color:"#94a3b8",fontSize:10}}>المتوقع</div><div style={{fontWeight:800,color:"#475569",fontSize:12}}>{(d.exp/1000).toFixed(0)}K</div></div>
+                <div style={{background:"#f0fdf4",borderRadius:10,padding:"8px 4px"}}><div style={{color:"#16a34a",fontSize:10}}>المحصّل</div><div style={{fontWeight:800,color:"#15803d",fontSize:12}}>{(d.rec/1000).toFixed(0)}K</div></div>
+                <div style={{background:"#fffbeb",borderRadius:10,padding:"8px 4px"}}><div style={{color:"#d97706",fontSize:10}}>المتبقي</div><div style={{fontWeight:800,color:"#b45309",fontSize:12}}>{((d.exp-d.rec)/1000).toFixed(0)}K</div></div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── ENTRY ─────────────────────────────────────────────────────
+function Entry({gens,subs,reloadSubs,user,toast}){
+  const gen=gens.find(g=>g.id===user.assigned_generator_id);
+  const [search,setSearch]=useState(""); const [saving,setSaving]=useState(false);
+  const [suggs,setSuggs]=useState([]); const [showS,setShowS]=useState(false);
+  const [form,setForm]=useState({subscriber_info:"",amperes:"",amount_received:"",notes:"",month_year:nowM()});
+  const fv=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const known=[...new Set(subs.filter(s=>s.generator_id===user.assigned_generator_id).map(s=>s.subscriber_info))];
+  const handleSearch=v=>{setSearch(v);fv("subscriber_info",v);setSuggs(v.length>=2?known.filter(s=>s.includes(v)):[]);setShowS(v.length>=2)};
+  const handleAmp=v=>{const a=parseFloat(v)||0;setForm(f=>({...f,amperes:v,amount_received:gen&&a?String(a*gen.price_per_ampere_iqd):""}))};
+  const submit=async()=>{
+    if(!form.subscriber_info.trim()||!form.amperes||!form.amount_received||!gen)return;
+    setSaving(true);
+    try{
+      const a=parseFloat(form.amperes);
+      await POST("subscriptions",{subscriber_info:form.subscriber_info.trim(),generator_id:user.assigned_generator_id,worker_id:user.id,amperes:a,amount_expected:a*gen.price_per_ampere_iqd,amount_received:parseFloat(form.amount_received),month_year:form.month_year,notes:form.notes});
+      await reloadSubs();
+      setForm({subscriber_info:"",amperes:"",amount_received:"",notes:"",month_year:nowM()});
+      setSearch("");toast("تم حفظ الاشتراك ✓","ok");
+    }catch(e){toast("خطأ في الحفظ","err")}finally{setSaving(false)}
+  };
+  const mine=[...subs].filter(s=>s.worker_id===user.id).slice(0,8);
+  return(
+    <div className="fade" style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div>
+        <div style={{fontWeight:800,fontSize:20,color:"#0f172a"}}>إدخال بيانات</div>
+        {gen
+          ?<div style={{color:"#6366f1",fontSize:13,fontWeight:600,marginTop:2}}>⚡ {gen.name}</div>
+          :<div style={{color:"#f59e0b",fontSize:13,fontWeight:600,marginTop:2}}>⚠️ لم يتم تخصيص مولدة لك</div>}
+      </div>
+      <div className="card" style={{padding:18,display:"flex",flexDirection:"column",gap:14}}>
+        <div style={{fontWeight:700,fontSize:14,color:"#1e293b"}}>📝 تسجيل اشتراك</div>
+        <div style={{position:"relative"}}>
+          <F label="اسم المشترك وصاحب الجوزة">
+            <div style={{position:"relative"}}>
+              <span style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",fontSize:15,pointerEvents:"none"}}>🔍</span>
+              <input value={search} onChange={e=>handleSearch(e.target.value)} onBlur={()=>setTimeout(()=>setShowS(false),150)} onFocus={()=>suggs.length&&setShowS(true)} placeholder="ابحث أو أدخل اسم جديد..." className="inp" style={{paddingRight:40}}/>
+            </div>
+          </F>
+          {showS&&suggs.length>0&&(
+            <div style={{position:"absolute",zIndex:10,width:"100%",marginTop:4,background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,boxShadow:"0 8px 24px rgba(0,0,0,.1)",overflow:"hidden"}}>
+              {suggs.map((s,i)=>(
+                <button key={i} onMouseDown={()=>{setSearch(s);fv("subscriber_info",s);setShowS(false)}}
+                  style={{width:"100%",textAlign:"right",padding:"11px 14px",background:"none",border:"none",borderBottom:i<suggs.length-1?"1px solid #f8fafc":"none",cursor:"pointer",fontFamily:"Cairo",fontSize:14,color:"#1e293b",fontWeight:600}}
+                  onMouseEnter={e=>e.target.style.background="#eff1fe"} onMouseLeave={e=>e.target.style.background="none"}>{s}</button>
+              ))}
+            </div>
+          )}
+        </div>
+        <F label="الشهر"><input type="month" value={form.month_year} onChange={e=>fv("month_year",e.target.value)} className="inp"/></F>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <F label="الأمبيرات">
+            <input type="number" value={form.amperes} onChange={e=>handleAmp(e.target.value)} placeholder="0" className="inp"/>
+            {gen&&<div style={{color:"#94a3b8",fontSize:11,marginTop:3,fontWeight:600}}>{iqd(gen.price_per_ampere_iqd)}/أمبير</div>}
+          </F>
+          <F label="المبلغ المحصّل" hint="(قابل للتعديل)">
+            <input type="number" value={form.amount_received} onChange={e=>fv("amount_received",e.target.value)} placeholder="0"
+              style={{width:"100%",background:"#f0fdf4",border:"1.5px solid #86efac",borderRadius:12,padding:"11px 14px",fontSize:14,color:"#15803d",outline:"none",fontWeight:800,boxSizing:"border-box"}}
+              onFocus={e=>{e.target.style.borderColor="#22c55e";e.target.style.boxShadow="0 0 0 3px rgba(34,197,94,.12)"}}
+              onBlur={e=>{e.target.style.borderColor="#86efac";e.target.style.boxShadow="none"}}/>
+          </F>
+        </div>
+        <F label="ملاحظات"><textarea value={form.notes} onChange={e=>fv("notes",e.target.value)} placeholder="خصم، دفع جزئي..." rows={2} className="inp" style={{resize:"none"}}/></F>
+        <button onClick={submit} disabled={!form.subscriber_info.trim()||!form.amperes||!form.amount_received||!gen||saving} className="btn btn-v" style={{padding:"13px",fontSize:14}}>
+          {saving?<><span className="spin" style={{width:16,height:16,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block"}}/>جاري الحفظ...</>:"💾 حفظ الاشتراك"}
+        </button>
+      </div>
+      {mine.length>0&&(
+        <div>
+          <div style={{fontWeight:700,fontSize:14,color:"#1e293b",marginBottom:8}}>🕐 آخر سجلاتك</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {mine.map(s=>(
+              <div key={s.id} className="card" style={{padding:12,display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:38,height:38,background:"#eff1fe",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>⚡</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:600,fontSize:13,color:"#1e293b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.subscriber_info}</div>
+                  <div style={{color:"#94a3b8",fontSize:11,marginTop:1}}>{fmy(s.month_year)} · {s.amperes} أمبير</div>
+                </div>
+                <div style={{textAlign:"left",flexShrink:0}}>
+                  <div style={{fontWeight:800,color:"#16a34a",fontSize:13}}>{iqd(s.amount_received)}</div>
+                  {s.notes&&<div style={{color:"#d97706",fontSize:10}}>{s.notes}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── TRANSACTIONS ──────────────────────────────────────────────
+function Txns({subs,gens,users,user,reloadSubs,toast}){
+  const [q,setQ]=useState(""); const [delId,setDelId]=useState(null); const [delL,setDelL]=useState(false);
+  const list=[...subs].filter(s=>{
+    if(user.role==="worker"&&s.worker_id!==user.id)return false;
+    if(q&&!s.subscriber_info?.includes(q))return false;
+    return true;
+  });
+  const paid=list.filter(s=>(s.amount_received||0)>=(s.amount_expected||0)).length;
+  const doDel=async()=>{
+    setDelL(true);
+    try{await DEL("subscriptions",delId);await reloadSubs();setDelId(null);toast("تم حذف المعاملة","ok")}
+    catch(e){toast("خطأ","err")}finally{setDelL(false)}
+  };
+  const canDel=user.role==="owner"||user.role==="admin";
+  return(
+    <div className="fade" style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div>
+        <div style={{fontWeight:800,fontSize:20,color:"#0f172a"}}>المعاملات</div>
+        <div style={{color:"#94a3b8",fontSize:13}}>{user.role==="worker"?"سجلاتك فقط":`${list.length} سجل · ${paid} مدفوع`}</div>
+      </div>
+      <div style={{position:"relative"}}>
+        <span style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",fontSize:15,pointerEvents:"none"}}>🔍</span>
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="بحث باسم المشترك..." className="inp" style={{paddingRight:40}}/>
+      </div>
+      {list.length===0&&<div className="card" style={{padding:40,textAlign:"center"}}><div style={{color:"#94a3b8"}}>لا توجد نتائج</div></div>}
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {list.map(s=>{
+          const g=gens.find(x=>x.id===s.generator_id);
+          const w=users.find(x=>x.id===s.worker_id);
+          const pd=(s.amount_received||0)>=(s.amount_expected||0);
+          return(
+            <div key={s.id} className="card" style={{padding:14}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:8}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:700,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.subscriber_info}</div>
+                  <div style={{color:"#94a3b8",fontSize:12,marginTop:2}}>{g?.name||"—"} · {fmy(s.month_year)}</div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+                  <span style={{background:pd?"#f0fdf4":"#fffbeb",color:pd?"#15803d":"#b45309",borderRadius:8,padding:"3px 8px",fontSize:11,fontWeight:700}}>{pd?"✓ مدفوع":"◐ جزئي"}</span>
+                  {canDel&&<button onClick={()=>setDelId(s.id)} className="btn" style={{width:30,height:30,background:"#fff5f5",borderRadius:8,padding:0,fontSize:14}}>🗑️</button>}
+                </div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"#f8fafc",borderRadius:10,padding:"8px 12px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{color:"#94a3b8",fontSize:12}}>👤 {w?.name||"—"}</span>
+                  <span style={{color:"#94a3b8",fontSize:12}}>⚡ {s.amperes} أمبير</span>
+                </div>
+                <div style={{fontWeight:900,color:"#0f172a",fontSize:15}}>{iqd(s.amount_received)}</div>
+              </div>
+              {s.notes&&<div style={{marginTop:8,background:"#fffbeb",borderRadius:8,padding:"6px 10px",color:"#b45309",fontSize:12,fontWeight:600}}>📝 {s.notes}</div>}
+            </div>
+          );
+        })}
+      </div>
+      {delId&&<Confirm msg="حذف هذه المعاملة؟" sub="هذا الإجراء لا يمكن التراجع عنه" onOk={doDel} onNo={()=>setDelId(null)} loading={delL}/>}
+    </div>
+  );
+}
+
+// ── NAV ───────────────────────────────────────────────────────
+const NAV={
+  owner:[{id:"dashboard",icon:"🏠",label:"الرئيسية"},{id:"generators",icon:"⚡",label:"المولدات"},{id:"history",icon:"📊",label:"المالية"},{id:"transactions",icon:"📋",label:"المعاملات"},{id:"users",icon:"👥",label:"الفريق"}],
+  admin:[{id:"transactions",icon:"📋",label:"المعاملات"},{id:"entry",icon:"➕",label:"إدخال"}],
+  worker:[{id:"entry",icon:"➕",label:"إدخال بيانات"},{id:"transactions",icon:"📋",label:"سجلاتي"}],
+};
+
+// ── APP ───────────────────────────────────────────────────────
+function App(){
+  const [user,setUser]=useState(null); const [tab,setTab]=useState(null);
+  const [authLoad,setAuthLoad]=useState(false); const [authErr,setAuthErr]=useState("");
+  const [users,setUsers]=useState([]); const [gens,setGens]=useState([]);
+  const [subs,setSubs]=useState([]); const [dataLoad,setDataLoad]=useState(false);
+  const [dataErr,setDataErr]=useState(""); const [checking,setChecking]=useState(true);
+  const [toasts,setToasts]=useState([]); const [sidebar,setSidebar]=useState(false);
+
+  const toast=(msg,type="ok")=>setToasts(q=>[...q,{msg,type,id:Date.now()+Math.random()}]);
+  const rmToast=id=>setToasts(q=>q.filter(t=>t.id!==id));
+
+  useEffect(()=>{
+    try{const s=localStorage.getItem("mwu");if(s){const u=JSON.parse(s);setUser(u);setTab(NAV[u.role]?.[0]?.id||"entry")}}catch(e){}
+    setChecking(false);
+  },[]);
+
+  const load=useCallback(async()=>{
+    setDataLoad(true);setDataErr("");
+    try{
+      const [u,g,s]=await Promise.all([GET("users","order=created_at.asc"),GET("generators","order=created_at.asc"),GET("subscriptions","order=created_at.desc")]);
+      setUsers(u);setGens(g);setSubs(s);
+    }catch(e){setDataErr("تعذّر تحميل البيانات")}finally{setDataLoad(false)}
+  },[]);
+
+  const reloadAll=useCallback(async()=>{
+    try{
+      const [u,g,s]=await Promise.all([GET("users","order=created_at.asc"),GET("generators","order=created_at.asc"),GET("subscriptions","order=created_at.desc")]);
+      setUsers(u);setGens(g);setSubs(s);
+      setUser(prev=>prev?(u.find(x=>x.id===prev.id)||null):null);
+    }catch(e){}
+  },[]);
+
+  const reloadSubs=useCallback(async()=>{
+    try{const s=await GET("subscriptions","order=created_at.desc");setSubs(s)}catch(e){}
+  },[]);
+
+  useEffect(()=>{if(user)load()},[user]);
+
+  const login=async(u,p)=>{
+    setAuthLoad(true);setAuthErr("");
+    try{
+      const rows=await GET("users",`username=eq.${encodeURIComponent(u)}&password=eq.${encodeURIComponent(p)}&limit=1`);
+      if(rows.length>0){localStorage.setItem("mwu",JSON.stringify(rows[0]));setUser(rows[0]);setTab(NAV[rows[0].role]?.[0]?.id||"entry")}
+      else setAuthErr("اسم المستخدم أو كلمة المرور غير صحيحة");
+    }catch(e){setAuthErr("تعذّر الاتصال: "+e.message)}finally{setAuthLoad(false)}
+  };
+
+  const logout=()=>{localStorage.removeItem("mwu");setUser(null);setTab(null);setUsers([]);setGens([]);setSubs([])};
+
+  // Splash
+  if(checking)return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#0f172a,#1e1b4b)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{textAlign:"center"}}>
+        <div style={{fontSize:56,marginBottom:20}}>⚡</div>
+        <div className="spin" style={{width:28,height:28,border:"3px solid rgba(99,102,241,.3)",borderTopColor:"#818cf8",borderRadius:"50%",margin:"0 auto"}}/>
+      </div>
+    </div>
+  );
+
+  if(!user)return <Login onLogin={login} loading={authLoad} error={authErr}/>;
+
+  const navItems=NAV[user.role]||NAV.worker;
+
+  const screen=()=>{
+    if(dataLoad)return(
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"80px 0",gap:12}}>
+        <div className="spin" style={{width:32,height:32,border:"3px solid #e2e8f0",borderTopColor:"#6366f1",borderRadius:"50%"}}/>
+        <div style={{color:"#94a3b8",fontSize:14}}>جاري تحميل البيانات...</div>
+      </div>
+    );
+    if(dataErr)return(
+      <div style={{background:"#fff5f5",border:"1.5px solid #fecaca",borderRadius:14,padding:18,display:"flex",gap:12,alignItems:"center"}}>
+        <span style={{fontSize:22}}>⚠️</span>
+        <div style={{flex:1,fontWeight:600,color:"#dc2626",fontSize:14}}>{dataErr}</div>
+        <button onClick={load} className="btn btn-r" style={{padding:"8px 14px",fontSize:13}}>إعادة</button>
+      </div>
+    );
+    switch(tab){
+      case "dashboard":    return <Dashboard gens={gens} subs={subs} user={user}/>;
+      case "generators":   return <Generators gens={gens} users={users} reload={reloadAll} me={user} toast={toast}/>;
+      case "history":      return <History subs={subs} gens={gens}/>;
+      case "transactions": return <Txns subs={subs} gens={gens} users={users} user={user} reloadSubs={reloadSubs} toast={toast}/>;
+      case "users":        return <Users users={users} gens={gens} reload={reloadAll} toast={toast}/>;
+      case "entry":        return <Entry gens={gens} subs={subs} reloadSubs={reloadSubs} user={user} toast={toast}/>;
+      default: return null;
+    }
+  };
+
+  return(
+    <div style={{minHeight:"100vh",background:"#f8fafc",maxWidth:480,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+      <Toast items={toasts} remove={rmToast}/>
+      {sidebar&&<Sidebar user={user} tab={tab} setTab={setTab} navItems={navItems} onLogout={logout} onClose={()=>setSidebar(false)} gens={gens}/>}
+
+      {/* Header */}
+      <div style={{background:"#fff",borderBottom:"1px solid #f1f5f9",padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:30,boxShadow:"0 1px 8px rgba(0,0,0,.05)"}}>
+        {/* Logo */}
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:36,height:36,background:"linear-gradient(135deg,#6366f1,#4f46e5)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,boxShadow:"0 4px 10px rgba(99,102,241,.3)"}}>⚡</div>
+          <span style={{fontWeight:900,fontSize:20,color:"#0f172a"}}>مولدتي</span>
+        </div>
+        {/* Actions */}
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <button onClick={reloadAll} className="btn" style={{width:36,height:36,background:"#f1f5f9",borderRadius:10,padding:0,fontSize:16,color:"#64748b"}} title="تحديث">↺</button>
+          <button onClick={()=>setSidebar(true)} className="btn" style={{width:36,height:36,background:"#eff1fe",borderRadius:10,padding:0,fontSize:18}} title="القائمة">☰</button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{flex:1,overflowY:"auto",padding:"14px 14px 100px"}}>{screen()}</div>
+
+      {/* Bottom Nav */}
+      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"#fff",borderTop:"1px solid #f1f5f9",zIndex:30,boxShadow:"0 -2px 16px rgba(0,0,0,.06)"}}>
+        <div style={{display:"flex",padding:"6px 8px 10px"}}>
+          {navItems.map(item=>{
+            const active=tab===item.id;
+            return(
+              <button key={item.id} onClick={()=>setTab(item.id)} className="btn" style={{flex:1,flexDirection:"column",gap:2,padding:"8px 4px",borderRadius:12,background:active?"#eff1fe":"transparent",color:active?"#4f46e5":"#94a3b8",fontSize:0}}>
+                <span style={{fontSize:20,lineHeight:1}}>{item.icon}</span>
+                <span style={{fontSize:11,fontWeight:active?800:600,lineHeight:1,fontFamily:"Cairo"}}>{item.label}</span>
+                {active&&<span style={{width:4,height:4,background:"#6366f1",borderRadius:"50%",display:"block"}}/>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
