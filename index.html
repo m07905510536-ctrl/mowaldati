@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#0d1117"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="مولدتي"/>
+<title>مولدتي</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+body{font-family:'Cairo',sans-serif;direction:rtl;background:#0d1117;color:#e2e8f0;overscroll-behavior:none}
+input,select,textarea{font-family:'Cairo',sans-serif}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:#30363d;border-radius:4px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.fade{animation:fadeUp .3s ease}
+.spin{animation:spin .7s linear infinite}
+/* Dark Card */
+.dc{background:#161b22;border-radius:16px;border:1px solid #30363d}
+/* Input */
+.di{width:100%;background:#0d1117;border:1.5px solid #30363d;border-radius:12px;padding:13px 16px;font-size:15px;color:#e2e8f0;outline:none;transition:.2s;font-family:Cairo}
+.di:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+.ds{width:100%;background:#0d1117;border:1.5px solid #30363d;border-radius:12px;padding:13px 16px;font-size:14px;color:#e2e8f0;outline:none;cursor:pointer;font-family:Cairo}
+.ds:focus{border-color:#3b82f6}
+/* Buttons */
+.db{border:none;cursor:pointer;font-family:Cairo;font-weight:700;border-radius:12px;transition:.2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.db:active{transform:scale(.97)}
+.db-blue{background:#3b82f6;color:#fff;padding:13px 20px;font-size:14px;box-shadow:0 4px 16px rgba(59,130,246,.3)}
+.db-blue:hover{background:#2563eb}
+.db-blue:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.db-red{background:#ef4444;color:#fff;padding:12px 20px;font-size:14px}
+.db-ghost{background:#21262d;color:#8b949e;padding:12px 20px;font-size:14px;border:1px solid #30363d}
+.db-ghost:hover{background:#30363d;color:#e2e8f0}
+/* Badge */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;gap:4px}
+.badge-green{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3)}
+.badge-yellow{background:rgba(234,179,8,.15);color:#eab308;border:1px solid rgba(234,179,8,.3)}
+.badge-red{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
+.badge-blue{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3)}
+/* Nav */
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:12px;border:none;background:transparent;cursor:pointer;font-family:Cairo;color:#6e7681;transition:.2s;flex:1}
+.nav-btn.active{color:#3b82f6;background:rgba(59,130,246,.1)}
+.nav-icon{font-size:22px;line-height:1}
+.nav-label{font-size:11px;font-weight:700;line-height:1}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useRef}=React;
+
+// ── Supabase ──
+const SB="https://pnifkbnhvmhwysyqhkwd.supabase.co";
+const SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuaWZrYm5odm1od3lzeXFoa3dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczNjkxMDEsImV4cCI6MjA5Mjk0NTEwMX0.6R3-arOCvnj6RLCrx9_fj0NX-j9su1bEPZRVlnRpTsc";
+const H={"Content-Type":"application/json","apikey":SK,"Authorization":`Bearer ${SK}`,"Prefer":"return=representation"};
+const api=t=>`${SB}/rest/v1/${t}`;
+const GET=async(t,q="")=>{const r=await fetch(`${api(t)}?${q}`,{headers:H});if(!r.ok)throw new Error(await r.text());return r.json()};
+const POST=async(t,b)=>{const r=await fetch(api(t),{method:"POST",headers:H,body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()};
+const PATCH=async(t,id,b)=>{const r=await fetch(`${api(t)}?id=eq.${id}`,{method:"PATCH",headers:H,body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()};
+const DEL=async(t,id)=>{const r=await fetch(`${api(t)}?id=eq.${id}`,{method:"DELETE",headers:H});if(!r.ok)throw new Error(await r.text())};
+
+// ── Utils ──
+const iqd=n=>new Intl.NumberFormat("ar-IQ").format(n||0)+" د.ع";
+const MO=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+const fmy=my=>{if(!my)return"";const[y,m]=my.split("-");return`${MO[+m-1]} ${y}`};
+const nowM=()=>new Date().toISOString().slice(0,7);
+
+// ── Toast ──
+function Toast({items}){
+  return <div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",zIndex:9999,display:"flex",flexDirection:"column",gap:8,pointerEvents:"none",minWidth:200}}>
+    {items.map(t=>(
+      <div key={t.id} style={{background:t.type==="ok"?"#166534":t.type==="err"?"#7f1d1d":"#1e3a5f",color:"#fff",padding:"11px 18px",borderRadius:12,fontWeight:700,fontSize:13,border:`1px solid ${t.type==="ok"?"#22c55e":t.type==="err"?"#ef4444":"#3b82f6"}`,textAlign:"center"}}>
+        {t.type==="ok"?"✓ ":t.type==="err"?"✕ ":"• "}{t.msg}
+      </div>
+    ))}
+  </div>;
+}
+
+// ── Confirm ──
+function Confirm({msg,onOk,onNo,loading}){
+  return <div style={{position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+    <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)"}} onClick={onNo}/>
+    <div className="dc fade" style={{position:"relative",width:"100%",maxWidth:340,padding:24,textAlign:"center"}}>
+      <div style={{fontSize:48,marginBottom:12}}>🗑️</div>
+      <div style={{fontWeight:800,fontSize:16,color:"#e2e8f0",marginBottom:8}}>{msg}</div>
+      <div style={{color:"#8b949e",fontSize:13,marginBottom:20}}>هذا الإجراء لا يمكن التراجع عنه</div>
+      <div style={{display:"flex",gap:10}}>
+        <button onClick={onNo} className="db db-ghost" style={{flex:1}}>إلغاء</button>
+        <button onClick={onOk} disabled={loading} className="db db-red" style={{flex:1}}>{loading?"جاري...":"حذف"}</button>
+      </div>
+    </div>
+  </div>;
+}
+
+// ── Modal ──
+function Modal({title,onClose,children}){
+  return <div style={{position:"fixed",inset:0,zIndex:100,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+    <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(6px)"}} onClick={onClose}/>
+    <div style={{position:"relative",background:"#161b22",width:"100%",maxWidth:460,borderRadius:"24px 24px 0 0",maxHeight:"92vh",display:"flex",flexDirection:"column",border:"1px solid #30363d",animation:"slideIn .25s ease"}}>
+      <div style={{padding:"18px 20px 14px",borderBottom:"1px solid #30363d",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+        <span style={{fontWeight:800,fontSize:17,color:"#e2e8f0"}}>{title}</span>
+        <button onClick={onClose} className="db db-ghost" style={{padding:"6px 12px",borderRadius:10,fontSize:16}}>✕</button>
+      </div>
+      <div style={{padding:20,overflowY:"auto",flex:1}}>{children}</div>
+    </div>
+  </div>;
+}
+
+// ── Sidebar ──
+function Sidebar({user,tab,setTab,navItems,onLogout,onClose,gens}){
+  const RL={owner:"مالك",admin:"مدير",worker:"عامل"};
+  const RI={owner:"👑",admin:"💼",worker:"🔧"};
+  return <div style={{position:"fixed",inset:0,zIndex:150}}>
+    <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(6px)"}} onClick={onClose}/>
+    <div style={{position:"absolute",right:0,top:0,bottom:0,width:280,background:"#161b22",display:"flex",flexDirection:"column",border:"1px solid #30363d",animation:"slideIn .22s ease"}}>
+      {/* Profile */}
+      <div style={{padding:"36px 20px 20px",background:"linear-gradient(135deg,#1a1f2e,#1e2433)",borderBottom:"1px solid #30363d",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:-30,left:-30,width:120,height:120,background:"rgba(59,130,246,.08)",borderRadius:"50%"}}/>
+        <div style={{width:60,height:60,background:"linear-gradient(135deg,#3b82f6,#2563eb)",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,marginBottom:12,boxShadow:"0 4px 16px rgba(59,130,246,.3)"}}>{RI[user.role]||"👤"}</div>
+        <div style={{fontWeight:800,fontSize:16,color:"#e2e8f0",marginBottom:4}}>{user.name}</div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span className="badge badge-blue">{RL[user.role]||user.role}</span>
+          <span style={{color:"#6e7681",fontSize:12}}>@{user.username}</span>
+        </div>
+        {user.assigned_generator_id&&(()=>{const g=gens.find(x=>x.id===user.assigned_generator_id);return g?<div style={{marginTop:8,color:"#6e7681",fontSize:12}}>⚡ {g.name}</div>:null})()}
+      </div>
+      {/* Nav */}
+      <div style={{flex:1,padding:"8px 10px",overflowY:"auto"}}>
+        <div style={{color:"#6e7681",fontSize:11,fontWeight:700,padding:"10px 10px 4px",letterSpacing:".08em",textTransform:"uppercase"}}>القائمة</div>
+        {navItems.map(item=>{
+          const active=tab===item.id;
+          return <button key={item.id} onClick={()=>{setTab(item.id);onClose()}} className="db"
+            style={{width:"100%",justifyContent:"flex-start",gap:12,padding:"11px 12px",borderRadius:12,marginBottom:2,background:active?"rgba(59,130,246,.15)":"transparent",color:active?"#60a5fa":"#8b949e",fontWeight:active?700:500,fontSize:14,border:active?"1px solid rgba(59,130,246,.3)":"1px solid transparent"}}>
+            <span style={{fontSize:20,width:26,textAlign:"center",lineHeight:1}}>{item.icon}</span>
+            <span style={{flex:1,textAlign:"right"}}>{item.label}</span>
+            {active&&<span style={{width:6,height:6,background:"#3b82f6",borderRadius:"50%"}}/>}
+          </button>;
+        })}
+      </div>
+      {/* Logout */}
+      <div style={{padding:"10px 10px 32px",borderTop:"1px solid #30363d"}}>
+        <button onClick={onLogout} className="db" style={{width:"100%",justifyContent:"flex-start",gap:12,padding:"11px 12px",borderRadius:12,background:"rgba(239,68,68,.1)",color:"#ef4444",fontWeight:700,fontSize:14,border:"1px solid rgba(239,68,68,.2)"}}>
+          <span style={{fontSize:20}}>🚪</span> تسجيل الخروج
+        </button>
+      </div>
+    </div>
+  </div>;
+}
+
+const Fld=({label,hint,children})=>(
+  <div style={{display:"flex",flexDirection:"column",gap:7}}>
+    <label style={{fontSize:13,fontWeight:700,color:"#8b949e"}}>{label}{hint&&<span style={{color:"#3b82f6",fontWeight:500,marginRight:4}}>{hint}</span>}</label>
+    {children}
+  </div>
+);
+
+// ─────────────────────────────────────────────
+// LOGIN
+// ─────────────────────────────────────────────
+function Login({onLogin,loading,error}){
+  const [u,setU]=useState(""); const [p,setP]=useState(""); const [show,setShow]=useState(false);
+  return(
+    <div style={{minHeight:"100vh",background:"#0d1117",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(circle at 50% 0%, rgba(59,130,246,.12) 0%, transparent 60%)",pointerEvents:"none"}}/>
+      <div style={{position:"relative",width:"100%",maxWidth:360}}>
+        {/* Logo */}
+        <div style={{textAlign:"center",marginBottom:36}}>
+          <div style={{width:80,height:80,background:"linear-gradient(135deg,#1e3a5f,#1e40af)",borderRadius:24,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",border:"1px solid rgba(59,130,246,.4)",boxShadow:"0 8px 32px rgba(59,130,246,.2)"}}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <h1 style={{color:"#e2e8f0",fontWeight:900,fontSize:32,marginBottom:6}}>مولدتي</h1>
+          <p style={{color:"#6e7681",fontSize:14}}>تسجيل الدخول لإدارة المولدات والجباية</p>
+        </div>
+        {/* Form */}
+        <div className="dc" style={{padding:24}}>
+          <div style={{display:"flex",flexDirection:"column",gap:16}}>
+            <div>
+              <label style={{color:"#8b949e",fontSize:13,fontWeight:700,display:"block",marginBottom:8}}>اسم المستخدم</label>
+              <input value={u} onChange={e=>setU(e.target.value)} placeholder="أدخل اسم المستخدم" className="di"
+                onFocus={e=>{e.target.style.borderColor="#3b82f6";e.target.style.boxShadow="0 0 0 3px rgba(59,130,246,.15)"}}
+                onBlur={e=>{e.target.style.borderColor="#30363d";e.target.style.boxShadow="none"}}/>
+            </div>
+            <div>
+              <label style={{color:"#8b949e",fontSize:13,fontWeight:700,display:"block",marginBottom:8}}>كلمة المرور</label>
+              <div style={{position:"relative"}}>
+                <input type={show?"text":"password"} value={p} onChange={e=>setP(e.target.value)} onKeyDown={e=>e.key==="Enter"&&onLogin(u,p)} placeholder="••••••••" className="di" style={{paddingLeft:44}}
+                  onFocus={e=>{e.target.style.borderColor="#3b82f6";e.target.style.boxShadow="0 0 0 3px rgba(59,130,246,.15)"}}
+                  onBlur={e=>{e.target.style.borderColor="#30363d";e.target.style.boxShadow="none"}}/>
+                <button onClick={()=>setShow(s=>!s)} style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#6e7681",fontSize:18,padding:0,lineHeight:1}}>{show?"🙈":"👁️"}</button>
+              </div>
+            </div>
+            {error&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.3)",borderRadius:10,padding:"11px 14px",color:"#f87171",fontSize:13,fontWeight:600}}>{error}</div>}
+            <button onClick={()=>onLogin(u,p)} disabled={loading} className="db db-blue" style={{padding:"15px",fontSize:16,marginTop:4,width:"100%"}}>
+              {loading?<><span className="spin" style={{width:18,height:18,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block"}}/>جاري التحقق...</>:"دخول"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// DASHBOARD
+// ─────────────────────────────────────────────
+function Dashboard({gens,subs,users,user}){
+  const rev=subs.reduce((a,s)=>a+(s.amount_received||0),0);
+  const exp=subs.reduce((a,s)=>a+(s.amount_expected||0),0);
+  const pct=exp>0?Math.round((rev/exp)*100):0;
+  const paid=subs.filter(s=>(s.amount_received||0)>=(s.amount_expected||0)&&s.amount_expected>0).length;
+  const partial=subs.filter(s=>(s.amount_received||0)>0&&(s.amount_received||0)<(s.amount_expected||0)).length;
+  const unpaid=subs.filter(s=>(s.amount_received||0)===0&&s.amount_expected>0).length;
+  const recent=[...subs].slice(0,8);
+
+  return(
+    <div className="fade" style={{display:"flex",flexDirection:"column",gap:14}}>
+      {/* Month Summary */}
+      <div className="dc" style={{padding:18}}>
+        <div style={{fontWeight:800,fontSize:16,color:"#e2e8f0",marginBottom:14}}>ملخص الإيرادات — {new Date().toISOString().slice(0,7).replace("-","/")} </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+          <div style={{background:"linear-gradient(135deg,#1e3a5f,#1e40af)",borderRadius:14,padding:"14px 16px",border:"1px solid rgba(59,130,246,.3)"}}>
+            <div style={{color:"#93c5fd",fontSize:12,fontWeight:600,marginBottom:4}}>المُحصَّل</div>
+            <div style={{fontWeight:900,fontSize:20,color:"#e2e8f0"}}>{iqd(rev)}</div>
+            <div style={{color:"#6e7681",fontSize:11,marginTop:2}}>نسبة التحصيل: {pct}%</div>
+          </div>
+          <div className="dc" style={{padding:"14px 16px"}}>
+            <div style={{color:"#8b949e",fontSize:12,fontWeight:600,marginBottom:4}}>المتوقع كلياً</div>
+            <div style={{fontWeight:900,fontSize:20,color:"#e2e8f0"}}>{iqd(exp)}</div>
+          </div>
+          <div className="dc" style={{padding:"14px 16px"}}>
+            <div style={{color:"#8b949e",fontSize:12,fontWeight:600,marginBottom:4}}>صافي الأرباح</div>
+            <div style={{fontWeight:900,fontSize:20,color:"#22c55e"}}>{iqd(rev)}</div>
+          </div>
+          <div className="dc" style={{padding:"14px 16px"}}>
+            <div style={{color:"#ef4444",fontSize:12,fontWeight:600,marginBottom:4}}>المتبقي ديون</div>
+            <div style={{fontWeight:900,fontSize:20,color:"#ef4444"}}>{iqd(exp-rev)}</div>
+          </div>
+        </div>
+        {/* Status indicators */}
+        <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:12}}>
+          <span className="badge badge-red">● غير مدفوع</span>
+          <span className="badge badge-yellow">● جزئي</span>
+          <span className="badge badge-green">● مدفوع</span>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+          {[{n:unpaid,l:"غير مدفوع",c:"#ef4444",bg:"rgba(239,68,68,.1)",ic:"⊘"},{n:partial,l:"جزئي",c:"#eab308",bg:"rgba(234,179,8,.1)",ic:"◑"},{n:paid,l:"مدفوع",c:"#22c55e",bg:"rgba(34,197,94,.1)",ic:"✓"}].map((s,i)=>(
+            <div key={i} style={{background:s.bg,borderRadius:12,padding:"12px 8px",textAlign:"center",border:`1px solid ${s.c}30`}}>
+              <div style={{color:s.c,fontSize:22,marginBottom:4,fontWeight:900}}>{s.ic}</div>
+              <div style={{color:s.c,fontSize:22,fontWeight:900}}>{s.n}</div>
+              <div style={{color:"#6e7681",fontSize:11,marginTop:2}}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Recent Transactions */}
+      <div className="dc" style={{padding:18}}>
+        <div style={{fontWeight:800,fontSize:15,color:"#e2e8f0",marginBottom:14}}>أحدث عمليات الجباية</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",marginBottom:10,padding:"0 4px"}}>
+          {["المشترك","المبلغ","الحالة"].map((h,i)=><div key={i} style={{color:"#6e7681",fontSize:12,fontWeight:600,textAlign:i===2?"center":i===1?"center":"right"}}>{h}</div>)}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:1}}>
+          {recent.length===0&&<div style={{textAlign:"center",color:"#6e7681",padding:"24px 0",fontSize:13}}>لا توجد معاملات بعد</div>}
+          {recent.map(s=>{
+            const pd=(s.amount_received||0)>=(s.amount_expected||0)&&s.amount_expected>0;
+            const pt=(s.amount_received||0)>0&&(s.amount_received||0)<(s.amount_expected||0);
+            return(
+              <div key={s.id} style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",padding:"12px 4px",borderBottom:"1px solid #21262d",alignItems:"center"}}>
+                <div>
+                  <div style={{fontWeight:700,fontSize:13,color:"#e2e8f0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.subscriber_info?.split("/")[0]?.trim()}</div>
+                  <div style={{color:"#6e7681",fontSize:11}}>{fmy(s.month_year)}</div>
+                </div>
+                <div style={{textAlign:"center",fontWeight:700,color:"#60a5fa",fontSize:13}}>{iqd(s.amount_received)}</div>
+                <div style={{textAlign:"center"}}>
+                  <span className={`badge ${pd?"badge-green":pt?"badge-yellow":"badge-red"}`}>{pd?"مدفوع":pt?"جزئي":"غير مدفوع"}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Generators */}
+      {gens.length>0&&(
+        <div className="dc" style={{padding:18}}>
+          <div style={{fontWeight:800,fontSize:15,color:"#e2e8f0",marginBottom:12}}>حالة القوائم الحالية</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {gens.map(g=>{
+              const gs=subs.filter(s=>s.generator_id===g.id);
+              const gr=gs.reduce((a,s)=>a+(s.amount_received||0),0);
+              const ge=gs.reduce((a,s)=>a+(s.amount_expected||0),0);
+              const gp=ge>0?Math.round((gr/ge)*100):0;
+              return(
+                <div key={g.id} style={{background:"#0d1117",borderRadius:12,padding:14,border:"1px solid #30363d"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                    <div style={{fontWeight:700,fontSize:13,color:"#e2e8f0"}}>⚡ {g.name}</div>
+                    <span className="badge badge-blue">{gp}%</span>
+                  </div>
+                  <div style={{height:5,background:"#21262d",borderRadius:99,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${gp}%`,background:"linear-gradient(90deg,#3b82f6,#60a5fa)",borderRadius:99}}/>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
+                    <span style={{color:"#6e7681",fontSize:11}}>{gs.length} مشترك</span>
+                    <span style={{color:"#22c55e",fontSize:11,fontWeight:700}}>{iqd(gr)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// SUBSCRIBERS (المشتركون)
+// ─────────────────────────────────────────────
+function Subscribers({subs,gens,users,reloadSubs,user,toast}){
+  const [q,setQ]=useState("");
+  const [modal,setModal]=useState(false);
+  const [ed,setEd]=useState(null);
+  const [delId,setDelId]=useState(null);
+  const [delL,setDelL]=useState(false);
+  const [saving,setSaving]=useState(false);
+  const [err,setErr]=useState("");
+  const [form,setForm]=useState({subscriber_info:"",breaker_owner:"",amperes:"",amount_received:"",notes:"",month_year:nowM(),generator_id:user.assigned_generator_id||""});
+  const fv=(k,v)=>setForm(f=>({...f,[k]:v}));
+
+  const gen=gens.find(g=>g.id===form.generator_id);
+
+  const myGens=user.role==="owner"||user.role==="admin"?gens:gens.filter(g=>g.id===user.assigned_generator_id);
+
+  const list=subs.filter(s=>{
+    if(user.role==="worker"&&s.worker_id!==user.id)return false;
+    if(q&&!s.subscriber_info?.includes(q)&&!s.notes?.includes(q))return false;
+    return true;
+  });
+
+  const openAdd=()=>{
+    setForm({subscriber_info:"",breaker_owner:"",amperes:"",amount_received:"",notes:"",month_year:nowM(),generator_id:user.assigned_generator_id||(gens[0]?.id||"")});
+    setEd(null);setErr("");setModal(true);
+  };
+  const openEdit=s=>{
+    const parts=s.subscriber_info?.split("/");
+    setForm({subscriber_info:parts?.[0]?.trim()||s.subscriber_info,breaker_owner:parts?.[1]?.trim()||"",amperes:String(s.amperes||""),amount_received:String(s.amount_received||""),notes:s.notes||"",month_year:s.month_year||nowM(),generator_id:s.generator_id||""});
+    setEd(s);setErr("");setModal(true);
+  };
+
+  const handleAmp=v=>{
+    const a=parseFloat(v)||0;
+    const g=gens.find(x=>x.id===form.generator_id);
+    fv("amperes",v);
+    if(g&&a) fv("amount_received",String(a*g.price_per_ampere_iqd));
+  };
+
+  const save=async()=>{
+    if(!form.subscriber_info.trim()||!form.amperes||!form.month_year){setErr("الاسم والأمبيرات والشهر مطلوبة");return}
+    setSaving(true);setErr("");
+    try{
+      const sub_info=form.breaker_owner.trim()?`${form.subscriber_info.trim()} / ${form.breaker_owner.trim()}`:form.subscriber_info.trim();
+      const amp=parseFloat(form.amperes);
+      const g=gens.find(x=>x.id===form.generator_id);
+      const pl={subscriber_info:sub_info,generator_id:form.generator_id,worker_id:user.id,amperes:amp,amount_expected:g?amp*g.price_per_ampere_iqd:amp*(parseFloat(form.amount_received)||0),amount_received:parseFloat(form.amount_received)||0,month_year:form.month_year,notes:form.notes};
+      ed?await PATCH("subscriptions",ed.id,pl):await POST("subscriptions",pl);
+      await reloadSubs();setModal(false);toast(ed?"تم التعديل ✓":"تم إضافة المشترك ✓","ok");
+    }catch(e){setErr("خطأ: "+e.message)}finally{setSaving(false)}
+  };
+
+  const doDel=async()=>{
+    setDelL(true);
+    try{await DEL("subscriptions",delId);await reloadSubs();setDelId(null);toast("تم الحذف","ok")}
+    catch(e){toast("خطأ","err")}finally{setDelL(false)}
+  };
+
+  return(
+    <div className="fade" style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <h2 style={{fontWeight:800,fontSize:22,color:"#e2e8f0"}}>المشتركون</h2>
+      </div>
+      <button onClick={openAdd} className="db db-blue" style={{width:"100%",padding:"14px",fontSize:15}}>+ إضافة مشترك</button>
+      <div style={{position:"relative"}}>
+        <span style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",color:"#6e7681",fontSize:16,pointerEvents:"none"}}>🔍</span>
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="بحث عن اسم أو أبو الخبطة..." className="di" style={{paddingRight:44}}/>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {list.length===0&&<div className="dc" style={{padding:40,textAlign:"center",color:"#6e7681"}}>لا توجد نتائج</div>}
+        {list.map(s=>{
+          const g=gens.find(x=>x.id===s.generator_id);
+          const pd=(s.amount_received||0)>=(s.amount_expected||0)&&s.amount_expected>0;
+          const pt=(s.amount_received||0)>0&&(s.amount_received||0)<(s.amount_expected||0);
+          const debt=(s.amount_expected||0)-(s.amount_received||0);
+          const parts=s.subscriber_info?.split("/");
+          const name=parts?.[0]?.trim()||s.subscriber_info;
+          const breaker=parts?.[1]?.trim()||"";
+          return(
+            <div key={s.id} className="dc" style={{padding:14}}>
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
+                <div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                    <span className="badge badge-blue">فعّال</span>
+                  </div>
+                  <div style={{fontWeight:800,fontSize:16,color:"#e2e8f0"}}>{name}</div>
+                  {breaker&&<div style={{color:"#6e7681",fontSize:13}}>أبو الخبطة: <span style={{color:"#8b949e"}}>{breaker}</span></div>}
+                </div>
+                <div style={{display:"flex",gap:6}}>
+                  <button onClick={()=>openEdit(s)} style={{width:34,height:34,background:"#21262d",border:"1px solid #30363d",borderRadius:10,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
+                  <button onClick={()=>setDelId(s.id)} style={{width:34,height:34,background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.2)",borderRadius:10,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑️</button>
+                </div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                {debt>0
+                  ?<div><div style={{color:"#6e7681",fontSize:11}}>الديون</div><div style={{color:"#ef4444",fontWeight:800,fontSize:14}}>⊘ {iqd(debt)}</div></div>
+                  :<span className="badge badge-green">لا توجد ديون</span>}
+                <div style={{background:"rgba(59,130,246,.15)",borderRadius:12,padding:"8px 14px",display:"flex",alignItems:"center",gap:6,border:"1px solid rgba(59,130,246,.3)"}}>
+                  <span style={{color:"#60a5fa",fontSize:14}}>⚡</span>
+                  <span style={{color:"#60a5fa",fontWeight:800,fontSize:14}}>{s.amperes} أمبير</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {modal&&(
+        <Modal title={ed?"تعديل مشترك":"إضافة مشترك"} onClose={()=>!saving&&setModal(false)}>
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <Fld label="اسم المشترك *"><input value={form.subscriber_info} onChange={e=>fv("subscriber_info",e.target.value)} placeholder="الاسم الكامل" className="di"/></Fld>
+            <Fld label="أبو الخبطة"><input value={form.breaker_owner} onChange={e=>fv("breaker_owner",e.target.value)} placeholder="اسم صاحب الجوزة" className="di"/></Fld>
+            {(user.role==="owner"||user.role==="admin")&&<Fld label="المولدة *"><select value={form.generator_id} onChange={e=>fv("generator_id",e.target.value)} className="ds"><option value="">اختر مولدة</option>{myGens.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}</select></Fld>}
+            <Fld label="الشهر *"><input type="month" value={form.month_year} onChange={e=>fv("month_year",e.target.value)} className="di"/></Fld>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <Fld label="الأمبيرات *">
+                <input type="number" value={form.amperes} onChange={e=>handleAmp(e.target.value)} placeholder="0" className="di"/>
+                {gen&&<div style={{color:"#6e7681",fontSize:11,marginTop:3}}>{iqd(gen.price_per_ampere_iqd)}/أمبير</div>}
+              </Fld>
+              <Fld label="المبلغ المحصّل" hint="(قابل للتعديل)">
+                <input type="number" value={form.amount_received} onChange={e=>fv("amount_received",e.target.value)} placeholder="0"
+                  style={{width:"100%",background:"rgba(34,197,94,.05)",border:"1.5px solid rgba(34,197,94,.3)",borderRadius:12,padding:"13px 16px",fontSize:14,color:"#22c55e",outline:"none",fontFamily:"Cairo",fontWeight:800,boxSizing:"border-box"}}
+                  onFocus={e=>{e.target.style.borderColor="#22c55e";e.target.style.boxShadow="0 0 0 3px rgba(34,197,94,.15)"}}
+                  onBlur={e=>{e.target.style.borderColor="rgba(34,197,94,.3)";e.target.style.boxShadow="none"}}/>
+              </Fld>
+            </div>
+            <Fld label="ملاحظات"><textarea value={form.notes} onChange={e=>fv("notes",e.target.value)} placeholder="خصم، دفع جزئي..." rows={2} className="di" style={{resize:"none"}}/></Fld>
+            {err&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.3)",borderRadius:10,padding:"10px 14px",color:"#f87171",fontSize:13}}>{err}</div>}
+            <div style={{display:"flex",gap:10,paddingTop:4}}>
+              <button onClick={()=>setModal(false)} className="db db-ghost" style={{flex:1}}>إلغاء</button>
+              <button onClick={save} disabled={saving} className="db db-blue" style={{flex:1}}>{saving?"جاري...":(ed?"حفظ":"إضافة")}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {delId&&<Confirm msg="حذف هذا المشترك؟" onOk={doDel} onNo={()=>setDelId(null)} loading={delL}/>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// INVOICES (الفواتير)
+// ─────────────────────────────────────────────
+function Invoices({subs,gens,users,user,reloadSubs,toast}){
+  const [q,setQ]=useState(""); const [fG,setFG]=useState("all"); const [fS,setFS]=useState("all");
+  const [delId,setDelId]=useState(null); const [delL,setDelL]=useState(false);
+
+  const list=subs.filter(s=>{
+    if(user.role==="worker"&&s.worker_id!==user.id)return false;
+    if(fG!=="all"&&s.generator_id!==fG)return false;
+    if(fS==="paid"&&!((s.amount_received||0)>=(s.amount_expected||0)&&s.amount_expected>0))return false;
+    if(fS==="partial"&&!((s.amount_received||0)>0&&(s.amount_received||0)<(s.amount_expected||0)))return false;
+    if(fS==="unpaid"&&(s.amount_received||0)!==0)return false;
+    if(q&&!s.subscriber_info?.includes(q))return false;
+    return true;
+  });
+
+  const total=list.reduce((a,s)=>a+(s.amount_received||0),0);
+  const doDel=async()=>{setDelL(true);try{await DEL("subscriptions",delId);await reloadSubs();setDelId(null);toast("تم الحذف","ok")}catch(e){toast("خطأ","err")}finally{setDelL(false)}};
+  const canDel=user.role==="owner"||user.role==="admin";
+
+  return(
+    <div className="fade" style={{display:"flex",flexDirection:"column",gap:14}}>
+      <h2 style={{fontWeight:800,fontSize:22,color:"#e2e8f0"}}>الفواتير</h2>
+      {/* Filters */}
+      <div style={{position:"relative"}}>
+        <span style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",color:"#6e7681",fontSize:16,pointerEvents:"none"}}>🔍</span>
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="بحث باسم المشترك..." className="di" style={{paddingRight:44}}/>
+      </div>
+      <div style={{display:"flex",gap:8}}>
+        <select value={fG} onChange={e=>setFG(e.target.value)} className="ds" style={{flex:1}}>
+          <option value="all">كل المولدات</option>
+          {gens.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}
+        </select>
+        <select value={fS} onChange={e=>setFS(e.target.value)} className="ds" style={{flex:1}}>
+          <option value="all">كل الحالات</option>
+          <option value="paid">مدفوع</option>
+          <option value="partial">جزئي</option>
+          <option value="unpaid">غير مدفوع</option>
+        </select>
+      </div>
+      {/* Summary */}
+      <div className="dc" style={{padding:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{color:"#8b949e",fontSize:13}}>{list.length} فاتورة</div>
+        <div style={{fontWeight:800,color:"#60a5fa",fontSize:15}}>{iqd(total)}</div>
+      </div>
+      {/* List */}
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {list.length===0&&<div className="dc" style={{padding:40,textAlign:"center",color:"#6e7681"}}>لا توجد فواتير</div>}
+        {list.map(s=>{
+          const g=gens.find(x=>x.id===s.generator_id);
+          const w=users.find(x=>x.id===s.worker_id);
+          const pd=(s.amount_received||0)>=(s.amount_expected||0)&&s.amount_expected>0;
+          const pt=(s.amount_received||0)>0&&(s.amount_received||0)<(s.amount_expected||0);
+          return(
+            <div key={s.id} className="dc" style={{padding:14}}>
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8,gap:8}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:700,fontSize:14,color:"#e2e8f0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.subscriber_info}</div>
+                  <div style={{color:"#6e7681",fontSize:12,marginTop:2}}>{g?.name||"—"} · {fmy(s.month_year)}</div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+                  <span className={`badge ${pd?"badge-green":pt?"badge-yellow":"badge-red"}`}>{pd?"مدفوع":pt?"جزئي":"غير مدفوع"}</span>
+                  {canDel&&<button onClick={()=>setDelId(s.id)} style={{width:30,height:30,background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.2)",borderRadius:8,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑️</button>}
+                </div>
+              </div>
+              <div style={{background:"#0d1117",borderRadius:10,padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"space-between",border:"1px solid #21262d"}}>
+                <div style={{display:"flex",gap:14}}>
+                  <span style={{color:"#6e7681",fontSize:12}}>👤 {w?.name||"—"}</span>
+                  <span style={{color:"#6e7681",fontSize:12}}>⚡ {s.amperes} أمبير</span>
+                </div>
+                <div style={{fontWeight:900,color:"#e2e8f0",fontSize:15}}>{iqd(s.amount_received)}</div>
+              </div>
+              {s.notes&&<div style={{marginTop:8,background:"rgba(234,179,8,.08)",borderRadius:8,padding:"6px 10px",color:"#eab308",fontSize:12,border:"1px solid rgba(234,179,8,.2)"}}>📝 {s.notes}</div>}
+            </div>
+          );
+        })}
+      </div>
+      {delId&&<Confirm msg="حذف هذه الفاتورة؟" onOk={doDel} onNo={()=>setDelId(null)} loading={delL}/>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// HISTORY
+// ─────────────────────────────────────────────
+function History({subs,gens}){
+  const [fG,setFG]=useState("all"); const [fY,setFY]=useState("all");
+  const years=[...new Set(subs.map(s=>s.month_year?.split("-")[0]))].filter(Boolean).sort().reverse();
+  const fil=subs.filter(s=>{
+    if(fG!=="all"&&s.generator_id!==fG)return false;
+    if(fY!=="all"&&!s.month_year?.startsWith(fY))return false;
+    return true;
+  });
+  const byM={};
+  fil.forEach(s=>{if(!byM[s.month_year])byM[s.month_year]={exp:0,rec:0,n:0};byM[s.month_year].exp+=s.amount_expected||0;byM[s.month_year].rec+=s.amount_received||0;byM[s.month_year].n++});
+  const rows=Object.entries(byM).sort((a,b)=>b[0].localeCompare(a[0]));
+  const total=fil.reduce((a,s)=>a+(s.amount_received||0),0);
+  return(
+    <div className="fade" style={{display:"flex",flexDirection:"column",gap:14}}>
+      <h2 style={{fontWeight:800,fontSize:22,color:"#e2e8f0"}}>التاريخ</h2>
+      <div style={{display:"flex",gap:8}}>
+        <select value={fG} onChange={e=>setFG(e.target.value)} className="ds" style={{flex:1}}><option value="all">كل المولدات</option>{gens.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}</select>
+        <select value={fY} onChange={e=>setFY(e.target.value)} className="ds" style={{flex:1}}><option value="all">كل السنوات</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select>
+      </div>
+      <div style={{background:"linear-gradient(135deg,#1e3a5f,#1e40af)",borderRadius:16,padding:"18px 20px",border:"1px solid rgba(59,130,246,.3)"}}>
+        <div style={{color:"#93c5fd",fontSize:13,marginBottom:4}}>إجمالي الإيرادات المصفاة</div>
+        <div style={{fontWeight:900,fontSize:28,color:"#e2e8f0"}}>{iqd(total)}</div>
+        <div style={{color:"#6e7681",fontSize:12,marginTop:4}}>{fil.length} سجل تحصيل</div>
+      </div>
+      {rows.length===0&&<div className="dc" style={{padding:40,textAlign:"center",color:"#6e7681"}}>لا توجد بيانات</div>}
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {rows.map(([my,d])=>{
+          const pct=d.exp>0?Math.round((d.rec/d.exp)*100):0;
+          return(
+            <div key={my} className="dc" style={{padding:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <div>
+                  <div style={{fontWeight:700,fontSize:15,color:"#e2e8f0"}}>{fmy(my)}</div>
+                  <div style={{color:"#6e7681",fontSize:12}}>{d.n} مشترك</div>
+                </div>
+                <span className={`badge ${pct>=100?"badge-green":"badge-yellow"}`}>{pct}%</span>
+              </div>
+              <div style={{height:6,background:"#21262d",borderRadius:99,overflow:"hidden",marginBottom:10}}>
+                <div style={{height:"100%",width:`${pct}%`,background:pct>=100?"linear-gradient(90deg,#22c55e,#16a34a)":"linear-gradient(90deg,#3b82f6,#60a5fa)",borderRadius:99}}/>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,textAlign:"center"}}>
+                <div style={{background:"#0d1117",borderRadius:10,padding:"8px 4px",border:"1px solid #21262d"}}><div style={{color:"#6e7681",fontSize:11}}>المتوقع</div><div style={{fontWeight:800,color:"#8b949e",fontSize:12}}>{(d.exp/1000).toFixed(0)}K</div></div>
+                <div style={{background:"rgba(34,197,94,.05)",borderRadius:10,padding:"8px 4px",border:"1px solid rgba(34,197,94,.2)"}}><div style={{color:"#22c55e",fontSize:11}}>المحصّل</div><div style={{fontWeight:800,color:"#22c55e",fontSize:12}}>{(d.rec/1000).toFixed(0)}K</div></div>
+                <div style={{background:"rgba(239,68,68,.05)",borderRadius:10,padding:"8px 4px",border:"1px solid rgba(239,68,68,.2)"}}><div style={{color:"#ef4444",fontSize:11}}>المتبقي</div><div style={{fontWeight:800,color:"#ef4444",fontSize:12}}>{((d.exp-d.rec)/1000).toFixed(0)}K</div></div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// MORE (المزيد)
+// ─────────────────────────────────────────────
+function More({gens,users,reload,me,toast}){
+  const [activeTab,setActiveTab]=useState("generators");
+  const [modal,setModal]=useState(false); const [ed,setEd]=useState(null);
+  const [delId,setDelId]=useState(null); const [saving,setSaving]=useState(false);
+  const [delL,setDelL]=useState(false); const [err,setErr]=useState("");
+  const [showP,setShowP]=useState(false);
+  const [form,setForm]=useState({name:"",location:"",price_per_ampere_iqd:"",username:"",password:"",role:"worker",assigned_generator_id:""});
+  const fv=(k,v)=>setForm(f=>({...f,[k]:v}));
+
+  const isGen=activeTab==="generators";
+
+  const openAddGen=()=>{setForm({name:"",location:"",price_per_ampere_iqd:""});setEd(null);setErr("");setModal("gen")};
+  const openEditGen=g=>{setForm({name:g.name,location:g.location||"",price_per_ampere_iqd:String(g.price_per_ampere_iqd)});setEd(g);setErr("");setModal("gen")};
+  const openAddUser=()=>{setForm({name:"",username:"",password:"",role:"worker",assigned_generator_id:""});setEd(null);setErr("");setShowP(false);setModal("user")};
+  const openEditUser=u=>{setForm({name:u.name,username:u.username,password:"",role:u.role,assigned_generator_id:u.assigned_generator_id||""});setEd(u);setErr("");setShowP(false);setModal("user")};
+
+  const saveGen=async()=>{
+    if(!form.name.trim()||!form.price_per_ampere_iqd){setErr("اسم المولدة والسعر مطلوبان");return}
+    const price=Number(form.price_per_ampere_iqd);
+    if(!price||price<=0){setErr("السعر يجب أن يكون أكبر من صفر");return}
+    setSaving(true);setErr("");
+    try{
+      const pl={name:form.name.trim(),location:form.location.trim(),price_per_ampere_iqd:price,owner_id:me.id};
+      ed?await PATCH("generators",ed.id,pl):await POST("generators",pl);
+      await reload();setModal(false);toast(ed?"تم تعديل المولدة ✓":"تم إضافة المولدة ✓","ok");
+    }catch(e){setErr("خطأ: "+e.message)}finally{setSaving(false)}
+  };
+
+  const saveUser=async()=>{
+    if(!form.name.trim()||!form.username.trim()){setErr("الاسم واسم المستخدم مطلوبان");return}
+    if(!ed&&!form.password.trim()){setErr("كلمة المرور مطلوبة");return}
+    const dup=users.find(u=>u.username===form.username.trim()&&(!ed||u.id!==ed.id));
+    if(dup){setErr("اسم المستخدم موجود مسبقاً");return}
+    setSaving(true);setErr("");
+    try{
+      const pl={name:form.name.trim(),username:form.username.trim(),role:form.role,assigned_generator_id:form.assigned_generator_id||null,...(form.password.trim()?{password:form.password.trim()}:{})};
+      ed?await PATCH("users",ed.id,pl):await POST("users",{...pl,password:form.password.trim()});
+      await reload();setModal(false);toast(ed?"تم تعديل المستخدم ✓":"تم إضافة المستخدم ✓","ok");
+    }catch(e){setErr("خطأ: "+e.message)}finally{setSaving(false)}
+  };
+
+  const doDel=async()=>{
+    setDelL(true);
+    try{
+      isGen?await DEL("generators",delId):await DEL("users",delId);
+      await reload();setDelId(null);toast("تم الحذف","ok");
+    }catch(e){toast("خطأ","err")}finally{setDelL(false)}
+  };
+
+  const RI={owner:{l:"مالك",i:"👑",c:"badge-blue"},admin:{l:"مدير",i:"💼",c:"badge-blue"},worker:{l:"عامل",i:"🔧",c:"badge-green"}};
+
+  return(
+    <div className="fade" style={{display:"flex",flexDirection:"column",gap:14}}>
+      <h2 style={{fontWeight:800,fontSize:22,color:"#e2e8f0"}}>الإعدادات</h2>
+      {/* Tabs */}
+      <div style={{display:"flex",background:"#161b22",borderRadius:12,padding:4,border:"1px solid #30363d"}}>
+        {[["generators","⚡ المولدات"],["users","👥 المستخدمون"]].map(([id,label])=>(
+          <button key={id} onClick={()=>setActiveTab(id)} className="db"
+            style={{flex:1,padding:"10px",borderRadius:10,background:activeTab===id?"#21262d":"transparent",color:activeTab===id?"#e2e8f0":"#6e7681",fontSize:14,border:activeTab===id?"1px solid #30363d":"1px solid transparent"}}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Generators Tab */}
+      {activeTab==="generators"&&(
+        <>
+          <button onClick={openAddGen} className="db db-blue" style={{width:"100%",padding:"13px",fontSize:14}}>+ إضافة مولدة</button>
+          {gens.length===0&&<div className="dc" style={{padding:40,textAlign:"center",color:"#6e7681"}}>لا توجد مولدات</div>}
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {gens.map(g=>(
+              <div key={g.id} className="dc" style={{padding:14,display:"flex",alignItems:"center",gap:12}}>
+                <div style={{width:44,height:44,background:"rgba(59,130,246,.1)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,border:"1px solid rgba(59,130,246,.2)"}}>⚡</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:700,fontSize:14,color:"#e2e8f0"}}>{g.name}</div>
+                  {g.location&&<div style={{color:"#6e7681",fontSize:12,marginTop:1}}>📍 {g.location}</div>}
+                  <div style={{color:"#6e7681",fontSize:12,marginTop:2}}>{iqd(g.price_per_ampere_iqd)}/أمبير</div>
+                </div>
+                <div style={{display:"flex",gap:6}}>
+                  <button onClick={()=>openEditGen(g)} style={{width:34,height:34,background:"#21262d",border:"1px solid #30363d",borderRadius:10,cursor:"pointer",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
+                  <button onClick={()=>setDelId(g.id)} style={{width:34,height:34,background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.2)",borderRadius:10,cursor:"pointer",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑️</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Users Tab */}
+      {activeTab==="users"&&(
+        <>
+          <button onClick={openAddUser} className="db db-blue" style={{width:"100%",padding:"13px",fontSize:14}}>+ إضافة مستخدم</button>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {users.map(u=>{
+              const ri=RI[u.role]||RI.worker;
+              const gen=gens.find(g=>g.id===u.assigned_generator_id);
+              return(
+                <div key={u.id} className="dc" style={{padding:14,display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:44,height:44,background:"rgba(59,130,246,.1)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,border:"1px solid rgba(59,130,246,.2)"}}>{ri.i}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                      <span style={{fontWeight:700,fontSize:14,color:"#e2e8f0"}}>{u.name}</span>
+                      <span className={`badge ${ri.c}`}>{ri.l}</span>
+                    </div>
+                    <div style={{color:"#6e7681",fontSize:12,marginTop:1}}>@{u.username}{gen?` · ⚡ ${gen.name}`:""}</div>
+                  </div>
+                  {u.role!=="owner"&&(
+                    <div style={{display:"flex",gap:6}}>
+                      <button onClick={()=>openEditUser(u)} style={{width:34,height:34,background:"#21262d",border:"1px solid #30363d",borderRadius:10,cursor:"pointer",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
+                      <button onClick={()=>setDelId(u.id)} style={{width:34,height:34,background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.2)",borderRadius:10,cursor:"pointer",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑️</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Generator Modal */}
+      {modal==="gen"&&(
+        <Modal title={ed?"تعديل المولدة":"مولدة جديدة"} onClose={()=>!saving&&setModal(false)}>
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <Fld label="اسم المولدة *"><input value={form.name} onChange={e=>fv("name",e.target.value)} placeholder="مثال: مولدة حي الرشيد" className="di"/></Fld>
+            <Fld label="الموقع"><input value={form.location} onChange={e=>fv("location",e.target.value)} placeholder="شارع، حي، مدينة" className="di"/></Fld>
+            <Fld label="سعر الأمبير (دينار عراقي) *"><input type="number" value={form.price_per_ampere_iqd} onChange={e=>fv("price_per_ampere_iqd",e.target.value)} placeholder="15000" className="di"/></Fld>
+            {err&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.3)",borderRadius:10,padding:"10px 14px",color:"#f87171",fontSize:13}}>{err}</div>}
+            <div style={{display:"flex",gap:10}}><button onClick={()=>setModal(false)} className="db db-ghost" style={{flex:1}}>إلغاء</button><button onClick={saveGen} disabled={saving} className="db db-blue" style={{flex:1}}>{saving?"جاري...":(ed?"حفظ":"إضافة")}</button></div>
+          </div>
+        </Modal>
+      )}
+
+      {/* User Modal */}
+      {modal==="user"&&(
+        <Modal title={ed?"تعديل مستخدم":"مستخدم جديد"} onClose={()=>!saving&&setModal(false)}>
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <Fld label="الاسم الكامل *"><input value={form.name} onChange={e=>fv("name",e.target.value)} placeholder="الاسم الكامل" className="di"/></Fld>
+            <Fld label="اسم الدخول *"><input value={form.username} onChange={e=>fv("username",e.target.value)} placeholder="username" className="di" style={{direction:"ltr",textAlign:"right"}}/></Fld>
+            <Fld label={`كلمة المرور${!ed?" *":""}`} hint={ed?"(اتركه فارغاً)":undefined}>
+              <div style={{position:"relative"}}>
+                <input type={showP?"text":"password"} value={form.password} onChange={e=>fv("password",e.target.value)} placeholder="كلمة المرور" className="di" style={{paddingLeft:44}}/>
+                <button onClick={()=>setShowP(s=>!s)} style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#6e7681",fontSize:16}}>{showP?"🙈":"👁️"}</button>
+              </div>
+            </Fld>
+            <Fld label="الصلاحية *"><select value={form.role} onChange={e=>fv("role",e.target.value)} className="ds"><option value="admin">مدير</option><option value="worker">عامل</option></select></Fld>
+            <Fld label="المولدة المخصصة"><select value={form.assigned_generator_id} onChange={e=>fv("assigned_generator_id",e.target.value)} className="ds"><option value="">— بدون مولدة —</option>{gens.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}</select></Fld>
+            {err&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.3)",borderRadius:10,padding:"10px 14px",color:"#f87171",fontSize:13}}>{err}</div>}
+            <div style={{display:"flex",gap:10}}><button onClick={()=>setModal(false)} className="db db-ghost" style={{flex:1}}>إلغاء</button><button onClick={saveUser} disabled={saving} className="db db-blue" style={{flex:1}}>{saving?"جاري...":(ed?"حفظ":"إضافة")}</button></div>
+          </div>
+        </Modal>
+      )}
+
+      {delId&&<Confirm msg={isGen?"حذف هذه المولدة؟":"حذف هذا المستخدم؟"} onOk={doDel} onNo={()=>setDelId(null)} loading={delL}/>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// NAV CONFIG
+// ─────────────────────────────────────────────
+const NAV={
+  owner:[{id:"dashboard",icon:"⊞",label:"لوحة"},{id:"subscribers",icon:"👥",label:"المشتركون"},{id:"invoices",icon:"💲",label:"الفواتير"},{id:"history",icon:"📈",label:"التاريخ"},{id:"more",icon:"⚙",label:"المزيد"}],
+  admin:[{id:"dashboard",icon:"⊞",label:"لوحة"},{id:"subscribers",icon:"👥",label:"المشتركون"},{id:"invoices",icon:"💲",label:"الفواتير"},{id:"history",icon:"📈",label:"التاريخ"}],
+  worker:[{id:"subscribers",icon:"👥",label:"المشتركون"},{id:"invoices",icon:"💲",label:"الفواتير"}],
+};
+
+// ─────────────────────────────────────────────
+// ROOT APP
+// ─────────────────────────────────────────────
+function App(){
+  const [user,setUser]=useState(null); const [tab,setTab]=useState(null);
+  const [authLoad,setAuthLoad]=useState(false); const [authErr,setAuthErr]=useState("");
+  const [users,setUsers]=useState([]); const [gens,setGens]=useState([]);
+  const [subs,setSubs]=useState([]); const [dataLoad,setDataLoad]=useState(false);
+  const [dataErr,setDataErr]=useState(""); const [checking,setChecking]=useState(true);
+  const [toasts,setToasts]=useState([]); const [sidebar,setSidebar]=useState(false);
+
+  const toast=(msg,type="ok")=>{
+    const id=Date.now()+Math.random();
+    setToasts(q=>[...q,{msg,type,id}]);
+    setTimeout(()=>setToasts(q=>q.filter(t=>t.id!==id)),2800);
+  };
+
+  useEffect(()=>{
+    try{const s=localStorage.getItem("mwu2");if(s){const u=JSON.parse(s);setUser(u);setTab(NAV[u.role]?.[0]?.id||"subscribers")}}catch(e){}
+    setChecking(false);
+  },[]);
+
+  const load=useCallback(async()=>{
+    setDataLoad(true);setDataErr("");
+    try{
+      const [u,g,s]=await Promise.all([GET("users","order=created_at.asc"),GET("generators","order=created_at.asc"),GET("subscriptions","order=created_at.desc")]);
+      setUsers(u);setGens(g);setSubs(s);
+    }catch(e){setDataErr("تعذّر تحميل البيانات")}finally{setDataLoad(false)}
+  },[]);
+
+  const reloadAll=useCallback(async()=>{
+    try{
+      const [u,g,s]=await Promise.all([GET("users","order=created_at.asc"),GET("generators","order=created_at.asc"),GET("subscriptions","order=created_at.desc")]);
+      setUsers(u);setGens(g);setSubs(s);
+      setUser(prev=>prev?(u.find(x=>x.id===prev.id)||null):null);
+    }catch(e){}
+  },[]);
+
+  const reloadSubs=useCallback(async()=>{
+    try{const s=await GET("subscriptions","order=created_at.desc");setSubs(s)}catch(e){}
+  },[]);
+
+  useEffect(()=>{if(user)load()},[user]);
+
+  const login=async(u,p)=>{
+    setAuthLoad(true);setAuthErr("");
+    try{
+      const rows=await GET("users",`username=eq.${encodeURIComponent(u)}&password=eq.${encodeURIComponent(p)}&limit=1`);
+      if(rows.length>0){localStorage.setItem("mwu2",JSON.stringify(rows[0]));setUser(rows[0]);setTab(NAV[rows[0].role]?.[0]?.id||"subscribers")}
+      else setAuthErr("اسم المستخدم أو كلمة المرور غير صحيحة");
+    }catch(e){setAuthErr("تعذّر الاتصال: "+e.message)}finally{setAuthLoad(false)}
+  };
+
+  const logout=()=>{localStorage.removeItem("mwu2");setUser(null);setTab(null);setUsers([]);setGens([]);setSubs([])};
+
+  // Splash
+  if(checking)return(
+    <div style={{minHeight:"100vh",background:"#0d1117",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{textAlign:"center"}}>
+        <div style={{width:70,height:70,background:"linear-gradient(135deg,#1e3a5f,#1e40af)",borderRadius:22,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",border:"1px solid rgba(59,130,246,.3)"}}>
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div className="spin" style={{width:24,height:24,border:"2.5px solid #21262d",borderTopColor:"#3b82f6",borderRadius:"50%",margin:"0 auto"}}/>
+      </div>
+    </div>
+  );
+
+  if(!user)return <Login onLogin={login} loading={authLoad} error={authErr}/>;
+
+  const navItems=NAV[user.role]||NAV.worker;
+
+  const screen=()=>{
+    if(dataLoad)return(
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"80px 0",gap:12}}>
+        <div className="spin" style={{width:28,height:28,border:"3px solid #21262d",borderTopColor:"#3b82f6",borderRadius:"50%"}}/>
+        <div style={{color:"#6e7681",fontSize:14}}>جاري تحميل البيانات...</div>
+      </div>
+    );
+    if(dataErr)return(
+      <div className="dc" style={{padding:20,display:"flex",gap:12,alignItems:"center"}}>
+        <span style={{fontSize:22}}>⚠️</span>
+        <div style={{flex:1,color:"#f87171",fontSize:14,fontWeight:600}}>{dataErr}</div>
+        <button onClick={load} className="db db-blue" style={{padding:"8px 14px",fontSize:13}}>إعادة</button>
+      </div>
+    );
+    switch(tab){
+      case "dashboard":    return <Dashboard gens={gens} subs={subs} users={users} user={user}/>;
+      case "subscribers":  return <Subscribers subs={subs} gens={gens} users={users} reloadSubs={reloadSubs} user={user} toast={toast}/>;
+      case "invoices":     return <Invoices subs={subs} gens={gens} users={users} user={user} reloadSubs={reloadSubs} toast={toast}/>;
+      case "history":      return <History subs={subs} gens={gens}/>;
+      case "more":         return <More gens={gens} users={users} reload={reloadAll} me={user} toast={toast}/>;
+      default: return null;
+    }
+  };
+
+  return(
+    <div style={{minHeight:"100vh",background:"#0d1117",maxWidth:480,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+      <Toast items={toasts}/>
+      {sidebar&&<Sidebar user={user} tab={tab} setTab={setTab} navItems={navItems} onLogout={logout} onClose={()=>setSidebar(false)} gens={gens}/>}
+
+      {/* Header */}
+      <div style={{background:"#161b22",borderBottom:"1px solid #30363d",padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:30}}>
+        <button onClick={()=>setSidebar(true)} style={{background:"none",border:"none",cursor:"pointer",color:"#e2e8f0",fontSize:22,padding:4,lineHeight:1}}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <span style={{fontWeight:900,fontSize:22,color:"#e2e8f0"}}>مولدتي</span>
+        <button onClick={reloadAll} style={{background:"none",border:"none",cursor:"pointer",color:"#6e7681",fontSize:18,padding:4,lineHeight:1}}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </button>
+      </div>
+
+      {/* Content */}
+      <div style={{flex:1,overflowY:"auto",padding:"14px 14px 90px"}}>{screen()}</div>
+
+      {/* Bottom Nav */}
+      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"#161b22",borderTop:"1px solid #30363d",zIndex:30}}>
+        <div style={{display:"flex",padding:"6px 8px 12px"}}>
+          {navItems.map(item=>{
+            const active=tab===item.id;
+            return(
+              <button key={item.id} onClick={()=>setTab(item.id)} className={`nav-btn ${active?"active":""}`}>
+                <span className="nav-icon">{item.icon}</span>
+                <span className="nav-label">{item.label}</span>
+                {active&&<span style={{width:4,height:4,background:"#3b82f6",borderRadius:"50%"}}/>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
