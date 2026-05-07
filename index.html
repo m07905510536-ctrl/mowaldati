@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>مولدتي V2 - الاحترافية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <style>
+        :root {
+            --bg-deep: #0f172a;
+            --bg-card: #1e293b;
+            --primary: #3b82f6;
+            --accent: #10b981;
+            --danger: #ef4444;
+            --text-main: #f1f5f9;
+            --text-dim: #94a3b8;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+        body { font-family: 'Cairo', sans-serif; background: var(--bg-deep); color: var(--text-main); }
+        
+        .app { max-width: 480px; margin: 0 auto; min-height: 100vh; position: relative; padding-bottom: 90px; }
+        
+        /* Header & Search */
+        .header { padding: 20px 16px; background: var(--bg-deep); position: sticky; top: 0; z-index: 50; }
+        .search-input { width: 100%; background: var(--bg-card); border: 1px solid #334155; border-radius: 12px; padding: 12px 15px; color: white; outline: none; }
+
+        /* Cards */
+        .card { background: var(--bg-card); border-radius: 16px; padding: 16px; margin: 12px 16px; border: 1px solid rgba(255,255,255,0.05); }
+        .flex-row { display: flex; justify-content: space-between; align-items: center; }
+        .tag { font-size: 10px; padding: 2px 8px; border-radius: 6px; font-weight: 800; margin-right: 8px; }
+        .tag-house { background: #1d4ed8; color: #dbeafe; }
+        .tag-shop { background: #b45309; color: #fef3c7; }
+
+        /* Nav Bar - Icons Only */
+        .nav-bar { position: fixed; bottom: 0; width: 100%; max-width: 480px; background: #161b22; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #30363d; }
+        .nav-item { cursor: pointer; opacity: 0.5; color: var(--text-dim); }
+        .nav-item.active { opacity: 1; color: var(--primary); }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 1000; }
+        .modal { background: var(--bg-card); width: 100%; max-width: 380px; border-radius: 20px; padding: 24px; }
+        .input-field { width: 100%; background: #0f172a; border: 1px solid #334155; color: white; padding: 12px; border-radius: 10px; margin: 8px 0; font-family: inherit; }
+        .btn { padding: 12px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; width: 100%; }
+        .btn-primary { background: var(--primary); color: white; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo } = React;
+
+const Icons = {
+  Home: () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
+  Records: () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>,
+  History: () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+};
+
+function App() {
+  const [tab, setTab] = useState('home');
+  const [search, setSearch] = useState('');
+  const [showPayModal, setShowPayModal] = useState(null);
+  
+  const [records] = useState([
+    { id: 1, name: 'فيز المولد الأول', hPrice: 10000, sPrice: 15000 }
+  ]);
+
+  const [subs, setSubs] = useState([
+    { id: 1, name: 'احمد علي', type: 'house', amps: 5, recordId: 1, isPaid: false, debt: 0 },
+    { id: 2, name: 'محل البركة', type: 'shop', amps: 10, recordId: 1, isPaid: false, debt: 0 }
+  ]);
+
+  const filteredSubs = useMemo(() => {
+    return subs.filter(s => s.name.includes(search));
+  }, [subs, search]);
+
+  const handleProcessPayment = (data) => {
+    const { subId, paid, required, reason } = data;
+    setSubs(prev => prev.map(s => {
+      if (s.id === subId) {
+        let finalDebt = s.debt;
+        if (reason === 'shortage') finalDebt += (required - paid);
+        return { ...s, isPaid: true, debt: finalDebt };
+      }
+      return s;
+    }));
+    setShowPayModal(null);
+  };
+
+  return (
+    <div className="app">
+      <div className="header">
+        <h2 style={{fontWeight: 900}}>مولدتي</h2>
+        <input className="search-input" placeholder="ابحث عن اسم المشترك..." value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
+
+      {tab === 'home' && (
+        <div>
+          {filteredSubs.map(sub => {
+            const rec = records.find(r => r.id === sub.recordId);
+            const price = sub.type === 'house' ? rec.hPrice : rec.sPrice;
+            const required = sub.amps * price;
+            return (
+              <div key={sub.id} className="card flex-row">
+                <div>
+                  <div className="flex-row" style={{justifyContent:'flex-start'}}>
+                    <span style={{fontWeight:700}}>{sub.name}</span>
+                    <span className={`tag ${sub.type === 'house' ? 'tag-house' : 'tag-shop'}`}>{sub.type === 'house' ? 'بيت' : 'محل'}</span>
+                  </div>
+                  <div style={{fontSize:'12px', color:'var(--text-dim)'}}>{sub.amps} أمبير • {required.toLocaleString()} د.ع</div>
+                  {sub.debt > 0 && <div style={{color:'var(--danger)', fontSize:'11px'}}>دين: {sub.debt.toLocaleString()}</div>}
+                </div>
+                <button className="btn" style={{width:'auto', background: sub.isPaid ? 'transparent' : 'var(--primary)', color: sub.isPaid ? 'var(--accent)' : 'white'}} onClick={() => !sub.isPaid && setShowPayModal({...sub, required})}>
+                  {sub.isPaid ? 'تم' : 'دفع'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {showPayModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3 style={{marginBottom:'10px'}}>{showPayModal.name}</h3>
+            <div style={{background:'#0f172a', padding:'10px', borderRadius:'8px', marginBottom:'15px', fontSize:'14px'}}>
+              المطلوب: <b>{showPayModal.required.toLocaleString()} د.ع</b>
+            </div>
+            <label style={{fontSize:'12px'}}>المبلغ المستلم</label>
+            <input id="p_in" type="number" className="input-field" defaultValue={showPayModal.required} onChange={(e)=> {
+              const d = document.getElementById('r_sec');
+              d.style.display = parseInt(e.target.value) < showPayModal.required ? 'block' : 'none';
+            }} />
+            <div id="r_sec" style={{display:'none'}}>
+              <label style={{fontSize:'12px'}}>السبب</label>
+              <select id="r_in" className="input-field">
+                <option value="shortage">نقص (دين)</option>
+                <option value="discount">خصم</option>
+              </select>
+            </div>
+            <button className="btn btn-primary" style={{marginTop:'15px'}} onClick={() => {
+              handleProcessPayment({
+                subId: showPayModal.id,
+                paid: parseInt(document.getElementById('p_in').value),
+                required: showPayModal.required,
+                reason: document.getElementById('r_in').value
+              });
+            }}>تأكيد</button>
+            <button className="btn" style={{marginTop:'8px', background:'transparent', color:'var(--text-dim)'}} onClick={()=>setShowPayModal(null)}>إلغاء</button>
+          </div>
+        </div>
+      )}
+
+      <div className="nav-bar">
+        <div className={`nav-item ${tab === 'home' ? 'active' : ''}`} onClick={() => setTab('home')}><Icons.Home /></div>
+        <div className={`nav-item ${tab === 'records' ? 'active' : ''}`} onClick={() => setTab('records')}><Icons.Records /></div>
+        <div className={`nav-item ${tab === 'history' ? 'active' : ''}`} onClick={() => setTab('history')}><Icons.History /></div>
+      </div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
+
