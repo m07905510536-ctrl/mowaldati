@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#0f1923"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="مولدتي"/>
+<title>مولدتي</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+body{font-family:'Cairo',sans-serif;direction:rtl;background:#0f1923;color:#dce8f5;overscroll-behavior:none}
+input,select,textarea{font-family:'Cairo',sans-serif}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:#30363d;border-radius:4px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.fade{animation:fadeUp .28s ease}
+.spin{animation:spin .7s linear infinite}
+.pulse{animation:pulse 1.5s ease infinite}
+.dc{background:#162030;border-radius:16px;border:1px solid #253447}
+.di{width:100%;background:#1c2a3a;border:1.5px solid #253447;border-radius:12px;padding:12px 14px;font-size:14px;color:#dce8f5;outline:none;transition:.2s;font-family:Cairo;box-sizing:border-box}
+.di:focus{border-color:#3b9eff;box-shadow:0 0 0 3px rgba(59,158,255,.12)}
+.ds{width:100%;background:#1c2a3a;border:1.5px solid #253447;border-radius:12px;padding:12px 14px;font-size:14px;color:#dce8f5;outline:none;cursor:pointer;font-family:Cairo;box-sizing:border-box}
+.ds:focus{border-color:#3b9eff}
+.db{border:none;cursor:pointer;font-family:Cairo;font-weight:700;border-radius:12px;transition:.2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.db:active{transform:scale(.97)}
+.db-blue{background:#3b9eff;color:#fff;padding:12px 18px;font-size:14px;box-shadow:0 4px 16px rgba(59,158,255,.22)}
+.db-blue:hover{background:#2579d4}.db-blue:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.db-green{background:#17a35c;color:#fff;padding:12px 18px;font-size:14px;box-shadow:0 4px 12px rgba(23,163,92,.2)}
+.db-green:hover{background:#138f50}.db-green:disabled{opacity:.5;cursor:not-allowed}
+.db-amber{background:#d97706;color:#fff;padding:12px 18px;font-size:14px}
+.db-red{background:#dc2626;color:#fff;padding:12px 18px;font-size:14px}
+.db-ghost{background:#1c2a3a;color:#8ba4c0;padding:11px 18px;font-size:14px;border:1px solid #253447}
+.db-ghost:hover{background:#253447;color:#dce8f5}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;gap:3px}
+.bg{background:rgba(34,208,122,.11);color:#22d07a;border:1px solid rgba(34,208,122,.22)}
+.by{background:rgba(245,166,35,.11);color:#f5a623;border:1px solid rgba(245,166,35,.22)}
+.br{background:rgba(232,64,64,.11);color:#e84040;border:1px solid rgba(232,64,64,.22)}
+.bb{background:rgba(59,158,255,.11);color:#3b9eff;border:1px solid rgba(59,158,255,.22)}
+.bp{background:rgba(155,109,255,.11);color:#9b6dff;border:1px solid rgba(155,109,255,.22)}
+.bred{background:rgba(232,64,64,.13);color:#ff6b6b;border:1px solid rgba(232,64,64,.28)}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 4px;border-radius:12px;border:none;background:transparent;cursor:pointer;font-family:Cairo;color:#5a7a99;transition:.2s;flex:1}
+.nav-btn.on{color:#3b9eff;background:rgba(59,158,255,.1)}
+@media print{.no-print{display:none!important}.print-only{display:block!important}}
+.print-only{display:none}
+</style>
+</head>
+<body><div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useRef}=React;
+
+// ── Supabase ──
+const SB="https://pnifkbnhvmhwysyqhkwd.supabase.co";
+const SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuaWZrYm5odm1od3lzeXFoa3dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczNjkxMDEsImV4cCI6MjA5Mjk0NTEwMX0.6R3-arOCvnj6RLCrx9_fj0NX-j9su1bEPZRVlnRpTsc";
+const H={"Content-Type":"application/json","apikey":SK,"Authorization":`Bearer ${SK}`,"Prefer":"return=representation"};
+const api=t=>`${SB}/rest/v1/${t}`;
+const GET=async(t,q="")=>{const r=await fetch(`${api(t)}?${q}`,{headers:H});if(!r.ok)throw new Error(await r.text());return r.json()};
+const POST=async(t,b)=>{const r=await fetch(api(t),{method:"POST",headers:H,body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()};
+const PATCH=async(t,id,b)=>{const r=await fetch(`${api(t)}?id=eq.${id}`,{method:"PATCH",headers:H,body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()};
+const DEL=async(t,id)=>{const r=await fetch(`${api(t)}?id=eq.${id}`,{method:"DELETE",headers:H});if(!r.ok)throw new Error(await r.text())};
+const RPC=async(fn,params)=>{const r=await fetch(`${SB}/rest/v1/rpc/${fn}`,{method:"POST",headers:H,body:JSON.stringify(params)});if(!r.ok)throw new Error(await r.text());return r.json()};
+
+// ── Offline Queue ──
+const QK="mw_q"; const CK="mw_c";
+const getQ=()=>{try{return JSON.parse(localStorage.getItem(QK)||"[]")}catch{return[]}};
+const saveQ=q=>localStorage.setItem(QK,JSON.stringify(q));
+const addQ=op=>{const q=getQ();q.push({...op,id:Date.now()+Math.random(),ts:new Date().toISOString()});saveQ(q)};
+const getC=()=>{try{return JSON.parse(localStorage.getItem(CK)||"{}")}catch{return{}}};
+const saveC=c=>localStorage.setItem(CK,JSON.stringify(c));
+
+const doSync=async()=>{
+  const q=getQ(); if(!q.length)return 0;
+  let done=0; const rem=[];
+  for(const op of q){
+    try{
+      if(op.type==="PAY") await PATCH("payments",op.id,op.data);
+      else if(op.type==="NEW_PAY") await POST("payments",op.data);
+      done++;
+    }catch{rem.push(op)}
+  }
+  saveQ(rem); return done;
+};
+
+// ── Utils ──
+const iqd=n=>new Intl.NumberFormat("ar-IQ").format(n||0)+" د.ع";
+const MO=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+const fmy=my=>{if(!my)return"";const[y,m]=my.split("-");return`${MO[+m-1]} ${y}`};
+const nowM=()=>new Date().toISOString().slice(0,7);
+const todayStr=()=>new Date().toLocaleDateString("ar-IQ",{year:"numeric",month:"long",day:"numeric"});
+
+// ── Online Hook ──
+function useOnline(){
+  const [on,setOn]=useState(navigator.onLine);
+  useEffect(()=>{const a=()=>setOn(true),b=()=>setOn(false);window.addEventListener("online",a);window.addEventListener("offline",b);return()=>{window.removeEventListener("online",a);window.removeEventListener("offline",b)};},[]);
+  return on;
+}
+
+// ── Toast ──
+function Toast({items}){
+  return <div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",zIndex:9999,display:"flex",flexDirection:"column",gap:8,pointerEvents:"none",minWidth:220}}>
+    {items.map(t=><div key={t.id} style={{background:t.type==="ok"?"#14532d":t.type==="err"?"#7f1d1d":"#1e3a5f",color:"#fff",padding:"11px 18px",borderRadius:12,fontWeight:700,fontSize:13,border:`1px solid ${t.type==="ok"?"#22d07a":t.type==="err"?"#e84040":"#3b9eff"}`,textAlign:"center",boxShadow:"0 8px 24px rgba(0,0,0,.4)"}}>
+      {t.type==="ok"?"✓ ":t.type==="err"?"✕ ":"ℹ "}{t.msg}
+    </div>)}
+  </div>;
+}
+
+// ── Confirm ──
+function Confirm({msg,sub,onOk,onNo,loading,danger}){
+  return <div style={{position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+    <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.75)",backdropFilter:"blur(8px)"}} onClick={onNo}/>
+    <div className="dc fade" style={{position:"relative",width:"100%",maxWidth:330,padding:24,textAlign:"center"}}>
+      <div style={{fontSize:44,marginBottom:10}}>{danger?"⚠️":"🗑️"}</div>
+      <div style={{fontWeight:800,fontSize:16,color:"#dce8f5",marginBottom:6}}>{msg}</div>
+      {sub&&<div style={{color:"#5a7a99",fontSize:13,marginBottom:16}}>{sub}</div>}
+      <div style={{display:"flex",gap:10,marginTop:18}}>
+        <button onClick={onNo} className="db db-ghost" style={{flex:1}}>إلغاء</button>
+        <button onClick={onOk} disabled={loading} className={`db ${danger?"db-amber":"db-red"}`} style={{flex:1}}>{loading?"جاري...":"تأكيد"}</button>
+      </div>
+    </div>
+  </div>;
+}
+
+// ── Modal ──
+function Modal({title,onClose,children}){
+  return <div style={{position:"fixed",inset:0,zIndex:100,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+    <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.72)",backdropFilter:"blur(6px)"}} onClick={onClose}/>
+    <div style={{position:"relative",background:"#162030",width:"100%",maxWidth:460,borderRadius:"24px 24px 0 0",maxHeight:"93vh",display:"flex",flexDirection:"column",border:"1px solid #30363d",animation:"slideIn .25s ease"}}>
+      <div style={{padding:"16px 18px 12px",borderBottom:"1px solid #30363d",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+        <span style={{fontWeight:800,fontSize:16,color:"#dce8f5"}}>{title}</span>
+        <button onClick={onClose} className="db db-ghost" style={{padding:"5px 10px",borderRadius:10,fontSize:16}}>✕</button>
+      </div>
+      <div style={{padding:18,overflowY:"auto",flex:1}}>{children}</div>
+    </div>
+  </div>;
+}
+
+// ── Sidebar ──
+function Sidebar({user,tab,setTab,navItems,onLogout,onClose,gens,queueLen}){
+  const RL={owner:"مالك",admin:"مشرف",worker:"عامل"};
+  const RI={owner:"👑",admin:"🛡️",worker:"🔧"};
+  return <div style={{position:"fixed",inset:0,zIndex:150}}>
+    <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.72)",backdropFilter:"blur(6px)"}} onClick={onClose}/>
+    <div style={{position:"absolute",right:0,top:0,bottom:0,width:276,background:"#162030",display:"flex",flexDirection:"column",border:"1px solid #30363d",animation:"slideIn .22s ease"}}>
+      <div style={{padding:"32px 18px 18px",background:"#0f1923",borderBottom:"1px solid #30363d",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:-20,left:-20,width:100,height:100,background:"rgba(59,158,255,.07)",borderRadius:"50%"}}/>
+        <div style={{width:56,height:56,background:"linear-gradient(135deg,#1a3a5c,#1a5aad)",borderRadius:16,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,marginBottom:10,border:"1px solid rgba(59,158,255,.3)"}}>{RI[user.role]||"👤"}</div>
+        <div style={{fontWeight:800,fontSize:15,color:"#dce8f5",marginBottom:4}}>{user.name}</div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span className="badge bb">{RL[user.role]||user.role}</span>
+          <span style={{color:"#5a7a99",fontSize:12}}>@{user.username}</span>
+        </div>
+        {queueLen>0&&<div style={{marginTop:8,color:"#f5a623",fontSize:12,fontWeight:600}}><span className="pulse">⏳</span> {queueLen} عملية معلقة</div>}
+      </div>
+      <div style={{flex:1,padding:"8px 10px",overflowY:"auto"}}>
+        {navItems.map(item=>{
+          const active=tab===item.id;
+          return <button key={item.id} onClick={()=>{setTab(item.id);onClose()}} className="db"
+            style={{width:"100%",justifyContent:"flex-start",gap:12,padding:"11px 12px",borderRadius:12,marginBottom:2,background:active?"rgba(59,158,255,.14)":"transparent",color:active?"#3b9eff":"#8ba4c0",fontWeight:active?700:500,fontSize:14,border:active?"1px solid rgba(59,158,255,.25)":"1px solid transparent"}}>
+            <span style={{width:24,display:"flex",alignItems:"center",justifyContent:"center"}}>{NAV_ICONS[item.id]||null}</span>
+            <span style={{flex:1,textAlign:"right"}}>{item.label}</span>
+            {active&&<span style={{width:6,height:6,background:"#3b9eff",borderRadius:"50%"}}/>}
+          </button>;
+        })}
+      </div>
+      <div style={{padding:"10px 10px 28px",borderTop:"1px solid #30363d"}}>
+        <button onClick={onLogout} className="db" style={{width:"100%",justifyContent:"flex-start",gap:12,padding:"11px 12px",borderRadius:12,background:"rgba(232,64,64,.08)",color:"#e84040",fontWeight:700,fontSize:14,border:"1px solid rgba(232,64,64,.18)"}}>
+          <span style={{fontSize:20}}>🚪</span> تسجيل الخروج
+        </button>
+      </div>
+    </div>
+  </div>;
+}
+
+const Fld=({label,hint,children})=>(
+  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+    <label style={{fontSize:12,fontWeight:700,color:"#8ba4c0"}}>{label}{hint&&<span style={{color:"#3b9eff",fontWeight:500,marginRight:4}}>{hint}</span>}</label>
+    {children}
+  </div>
+);
+
+// ─────────────────────────────────────────────
+// LOGIN
+// ─────────────────────────────────────────────
+function Login({onLogin,loading,error}){
+  const [u,setU]=useState(""); const [p,setP]=useState(""); const [show,setShow]=useState(false);
+  return(
+    <div style={{minHeight:"100vh",background:"#0f1923",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(circle at 50% 0%,rgba(59,158,255,.1) 0%,transparent 55%)",pointerEvents:"none"}}/>
+      <div style={{position:"relative",width:"100%",maxWidth:360}}>
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{width:76,height:76,background:"linear-gradient(135deg,#1a3a5c,#1a5aad)",borderRadius:22,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",border:"1px solid rgba(59,158,255,.35)",boxShadow:"0 8px 32px rgba(59,158,255,.18)"}}>
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#3b9eff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <h1 style={{color:"#dce8f5",fontWeight:900,fontSize:30,marginBottom:4}}>مولدتي</h1>
+          <p style={{color:"#5a7a99",fontSize:13}}>تسجيل الدخول لإدارة المولدات والجباية</p>
+        </div>
+        <div className="dc" style={{padding:22}}>
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div>
+              <label style={{color:"#8ba4c0",fontSize:12,fontWeight:700,display:"block",marginBottom:7}}>اسم المستخدم</label>
+              <input value={u} onChange={e=>setU(e.target.value)} placeholder="أدخل اسم المستخدم" className="di"
+                onFocus={e=>{e.target.style.borderColor="#3b9eff";e.target.style.boxShadow="0 0 0 3px rgba(59,158,255,.14)"}}
+                onBlur={e=>{e.target.style.borderColor="#253447";e.target.style.boxShadow="none"}}/>
+            </div>
+            <div>
+              <label style={{color:"#8ba4c0",fontSize:12,fontWeight:700,display:"block",marginBottom:7}}>كلمة المرور</label>
+              <div style={{position:"relative"}}>
+                <input type={show?"text":"password"} value={p} onChange={e=>setP(e.target.value)} onKeyDown={e=>e.key==="Enter"&&onLogin(u,p)} placeholder="••••••••" className="di" style={{paddingLeft:42}}
+                  onFocus={e=>{e.target.style.borderColor="#3b9eff";e.target.style.boxShadow="0 0 0 3px rgba(59,158,255,.14)"}}
+                  onBlur={e=>{e.target.style.borderColor="#253447";e.target.style.boxShadow="none"}}/>
+                <button onClick={()=>setShow(s=>!s)} style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#5a7a99",fontSize:17,padding:0,lineHeight:1}}>{show?"🙈":"👁️"}</button>
+              </div>
+            </div>
+            {error&&<div style={{background:"rgba(232,64,64,.1)",border:"1px solid rgba(232,64,64,.25)",borderRadius:10,padding:"10px 13px",color:"#f87171",fontSize:13,fontWeight:600}}>{error}</div>}
+            <button onClick={()=>onLogin(u,p)} disabled={loading} className="db db-blue" style={{padding:"14px",fontSize:15,width:"100%",marginTop:2}}>
+              {loading?<><span className="spin" style={{width:17,height:17,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block"}}/>جاري التحقق...</>:"دخول"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// RECORDS SCREEN — شاشة السجلات الرئيسية
+// ─────────────────────────────────────────────
+function RecordsScreen({records,members,payments,gens,month,setMonth,onOpenRecord,reload,me,toast}){
+  const [modal,setModal]=useState(false); const [ed,setEd]=useState(null);
+  const [delId,setDelId]=useState(null); const [saving,setSaving]=useState(false);
+  const [delL,setDelL]=useState(false); const [err,setErr]=useState("");
+  const [qRec,setQRec]=useState("");
+  const [form,setForm]=useState({name:"",generator_id:""});
+  const fv=(k,v)=>setForm(f=>({...f,[k]:v}));
+
+  const openAdd=()=>{setForm({name:"",generator_id:gens[0]?.id||""});setEd(null);setErr("");setModal(true)};
+  const openEdit=r=>{setForm({name:r.name,generator_id:r.generator_id||""});setEd(r);setErr("");setModal(true)};
+  const save=async()=>{
+    if(!form.name.trim()){setErr("اسم السجل مطلوب");return}
+    setSaving(true);setErr("");
+    try{
+      const pl={name:form.name.trim(),generator_id:form.generator_id||null,owner_id:me.id};
+      ed?await PATCH("records",ed.id,pl):await POST("records",pl);
+      await reload();setModal(false);toast(ed?"تم تعديل السجل ✓":"تم إضافة السجل ✓","ok");
+    }catch(e){setErr("خطأ: "+e.message)}finally{setSaving(false)}
+  };
+  const doDel=async()=>{
+    setDelL(true);
+    try{await DEL("records",delId);await reload();setDelId(null);toast("تم حذف السجل","ok")}
+    catch(e){toast("خطأ","err")}finally{setDelL(false)}
+  };
+
+  return(
+    <div className="fade" style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div>
+          <h2 style={{fontWeight:800,fontSize:20,color:"#dce8f5"}}>السجلات</h2>
+          <div style={{color:"#5a7a99",fontSize:13}}>{records.length} سجل · {fmy(month)}</div>
+        </div>
+        <button onClick={openAdd} className="db db-blue" style={{padding:"10px 14px",fontSize:13}}>+ سجل جديد</button>
+      </div>
+
+      {/* Month selector */}
+      <input type="month" value={month} onChange={e=>setMonth(e.target.value)} className="di"
+        style={{fontSize:14,cursor:"pointer"}}/>
+
+      {/* Search filter */}
+      <div style={{position:"relative"}}>
+        <span style={{position:"absolute",right:13,top:"50%",transform:"translateY(-50%)",color:"#5a7a99",pointerEvents:"none",fontSize:14}}>🔍</span>
+        <input value={qRec||""} onChange={e=>setQRec(e.target.value)} placeholder="بحث في السجلات..." className="di" style={{paddingRight:42}}/>
+      </div>
+
+      {records.length===0&&(
+        <div className="dc" style={{padding:48,textAlign:"center"}}>
+          <div style={{fontSize:44,marginBottom:10}}>📁</div>
+          <div style={{fontWeight:700,color:"#8ba4c0",marginBottom:4}}>لا توجد سجلات</div>
+          <div style={{color:"#5a7a99",fontSize:12}}>مثال: فيز المولد الأول، كابينة خارجية</div>
+        </div>
+      )}
+
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {(qRec?records.filter(r=>r.name?.includes(qRec)):records).map(rec=>{
+          const recMembers=members.filter(m=>m.record_id===rec.id);
+          const recPays=payments.filter(p=>p.record_id===rec.id&&p.month_year===month);
+          const totalExp=recMembers.reduce((a,m)=>{
+            const pay=recPays.find(p=>p.member_id===m.id);
+            return a+(pay?.amount_expected||m.amount_expected||0);
+          },0);
+          const totalRec=recPays.reduce((a,p)=>a+(p.amount_received||0),0);
+          const paidCount=recPays.filter(p=>(p.amount_received||0)>=(p.amount_expected||0)&&p.amount_expected>0).length;
+          const pct=totalExp>0?Math.round((totalRec/totalExp)*100):0;
+          const g=gens.find(x=>x.id===rec.generator_id);
+
+          return(
+            <div key={rec.id} className="dc" style={{padding:0,overflow:"hidden"}}>
+              {/* Clickable body */}
+              <div onClick={()=>onOpenRecord(rec)} style={{padding:16,cursor:"pointer"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                  <div>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                      <span style={{fontSize:20}}>📁</span>
+                      <span style={{fontWeight:800,fontSize:15,color:"#dce8f5"}}>{rec.name}</span>
+                    </div>
+                    {g&&<div style={{color:"#5a7a99",fontSize:12,marginRight:28}}>⚡ {g.name}</div>}
+                    <div style={{color:"#5a7a99",fontSize:12,marginRight:28}}>{recMembers.length} مشترك</div>
+                  </div>
+                  <div style={{textAlign:"left"}}>
+                    <span className={`badge ${pct>=100?"bg":pct>0?"by":"br"}`}>{pct}%</span>
+                    <div style={{color:"#22d07a",fontWeight:700,fontSize:13,marginTop:4}}>{iqd(totalRec)}</div>
+                    <div style={{color:"#5a7a99",fontSize:11}}>{paidCount}/{recMembers.length} دفع</div>
+                  </div>
+                </div>
+                <div style={{height:5,background:"#1c2a3a",borderRadius:99,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${pct}%`,background:pct>=100?"linear-gradient(90deg,#22d07a,#17a35c)":"linear-gradient(90deg,#3b82f6,#60a5fa)",borderRadius:99,transition:"width .5s"}}/>
+                </div>
+              </div>
+              {/* Actions */}
+              <div style={{display:"flex",borderTop:"1px solid #21262d"}}>
+                <button onClick={()=>onOpenRecord(rec)} className="db" style={{flex:1,padding:"10px",borderRadius:0,background:"transparent",color:"#3b9eff",fontSize:13,gap:4}}>
+                  📋 فتح السجل
+                </button>
+                <div style={{width:1,background:"#1c2a3a"}}/>
+                <button onClick={e=>{e.stopPropagation();openEdit(rec)}} className="db" style={{padding:"10px 14px",borderRadius:0,background:"transparent",color:"#8ba4c0",fontSize:16}}>✏️</button>
+                <div style={{width:1,background:"#1c2a3a"}}/>
+                <button onClick={e=>{e.stopPropagation();setDelId(rec.id)}} className="db" style={{padding:"10px 14px",borderRadius:0,background:"transparent",color:"#e84040",fontSize:16}}>🗑️</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {modal&&(
+        <Modal title={ed?"تعديل السجل":"سجل جديد"} onClose={()=>!saving&&setModal(false)}>
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <Fld label="اسم السجل *"><input value={form.name} onChange={e=>fv("name",e.target.value)} placeholder="مثال: فيز المولد الأول" className="di"/></Fld>
+            <Fld label="المولدة">
+              <select value={form.generator_id} onChange={e=>fv("generator_id",e.target.value)} className="ds">
+                <option value="">— بدون مولدة —</option>
+                {gens.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
+            </Fld>
+            {err&&<div style={{background:"rgba(232,64,64,.1)",border:"1px solid rgba(232,64,64,.25)",borderRadius:10,padding:"10px 13px",color:"#f87171",fontSize:13}}>{err}</div>}
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setModal(false)} className="db db-ghost" style={{flex:1}}>إلغاء</button>
+              <button onClick={save} disabled={saving} className="db db-blue" style={{flex:1}}>{saving?"جاري...":(ed?"حفظ":"إضافة")}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {delId&&<Confirm msg="حذف هذا السجل؟" sub="سيتم حذف جميع المشتركين والدفعات المرتبطة به" onOk={doDel} onNo={()=>setDelId(null)} loading={delL}/>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// RECORD DETAIL — داخل السجل
+// ─────────────────────────────────────────────
+function RecordDetail({record,members,payments,gens,month,reloadAll,user,toast,online,queueLen,onBack}){
+  const [q,setQ]=useState("");
+  const [addModal,setAddModal]=useState(false);
+  const [editMember,setEditMember]=useState(null);
+  const [payModal,setPayModal]=useState(null);
+  const [delMemberId,setDelMemberId]=useState(null);
+  const [resetConfirm,setResetConfirm]=useState(false);
+  const [exportConfirm,setExportConfirm]=useState(false);
+  const [saving,setSaving]=useState(false);
+  const [delL,setDelL]=useState(false);
+  const [err,setErr]=useState("");
+  const [payAmt,setPayAmt]=useState("");
+  const [payReason,setPayReason]=useState("");
+  const [form,setForm]=useState({name:"",breaker_owner:"",amperes:"",notes:"",type:"house"});
+  const fv=(k,v)=>setForm(f=>({...f,[k]:v}));
+
+  const gen=gens.find(g=>g.id===record.generator_id);
+  const recMembers=members.filter(m=>m.record_id===record.id);
+  const recPays=payments.filter(p=>p.record_id===record.id&&p.month_year===month);
+
+  // Helper: get payment for member this month
+  const getPay=m=>recPays.find(p=>p.member_id===m.id);
+  const getExpected=m=>{
+    const pay=getPay(m);
+    if(pay?.amount_expected) return pay.amount_expected;
+    if(!gen) return 0;
+    const amps=m.amperes||0;
+    if(m.type==="shop"&&gen.price_per_ampere_shop) return amps*gen.price_per_ampere_shop;
+    return amps*(gen.price_per_ampere_iqd||0);
+  };
+  const isPaid=m=>{const pay=getPay(m);const exp=getExpected(m);return pay&&(pay.amount_received||0)>=exp&&exp>0};
+  const isPartial=m=>{const pay=getPay(m);return pay&&(pay.amount_received||0)>0&&(pay.amount_received||0)<getExpected(m)};
+
+  const filtered=recMembers.filter(m=>!q||m.name?.includes(q)||m.breaker_owner?.includes(q));
+
+  // Stats
+  const totalExp=recMembers.reduce((a,m)=>a+getExpected(m),0);
+  const totalRec=recPays.reduce((a,p)=>a+(p.amount_received||0),0);
+  const paidCount=recMembers.filter(m=>isPaid(m)).length;
+  const unpaidCount=recMembers.filter(m=>!isPaid(m)&&!isPartial(m)).length;
+  const partialCount=recMembers.filter(m=>isPartial(m)).length;
+
+  // Add/Edit member
+  const openAdd=()=>{setForm({name:"",breaker_owner:"",amperes:"",notes:"",type:"house"});setEditMember(null);setErr("");setAddModal(true)};
+  const openEdit=m=>{setForm({name:m.name,breaker_owner:m.breaker_owner||"",amperes:String(m.amperes||""),notes:m.notes||"",type:m.type||"house"});setEditMember(m);setErr("");setAddModal(true)};
+
+  const saveMember=async()=>{
+    if(!form.name.trim()){setErr("اسم المشترك مطلوب");return}
+    setSaving(true);setErr("");
+    try{
+      const amps=parseFloat(form.amperes)||0;
+      const mtype=form.type||"house";
+      let expAmt=0;
+      if(gen){
+        if(mtype==="shop"&&gen.price_per_ampere_shop) expAmt=amps*gen.price_per_ampere_shop;
+        else expAmt=amps*(gen.price_per_ampere_iqd||0);
+      }
+      const pl={name:form.name.trim(),breaker_owner:form.breaker_owner.trim(),amperes:amps,notes:form.notes,record_id:record.id,generator_id:record.generator_id||null,type:mtype};
+      editMember?await PATCH("members",editMember.id,pl):await POST("members",{...pl,amount_expected:expAmt});
+      await reloadAll();setAddModal(false);toast(editMember?"تم التعديل ✓":"تم إضافة المشترك ✓","ok");
+    }catch(e){setErr("خطأ: "+e.message)}finally{setSaving(false)}
+  };
+
+  const delMember=async()=>{
+    setDelL(true);
+    try{await DEL("members",delMemberId);await reloadAll();setDelMemberId(null);toast("تم الحذف","ok")}
+    catch(e){toast("خطأ","err")}finally{setDelL(false)}
+  };
+
+  // Pay
+  const openPay=m=>{
+    const exp=getExpected(m);
+    const pay=getPay(m);
+    const remaining=exp-(pay?.amount_received||0);
+    setPayAmt(String(remaining>0?remaining:exp));
+    setPayReason("");
+    setPayModal(m);
+  };
+
+  const savePay=async()=>{
+    if(!payModal||!payAmt)return;
+    const amt=parseFloat(payAmt)||0;
+    const exp=getExpected(payModal);
+    const hasDiff=amt<exp&&amt>0;
+    if(hasDiff&&!payReason)return;
+    setSaving(true);
+    const existPay=getPay(payModal);
+    const isDebt=hasDiff&&payReason==="debt";
+    const payload={amount_received:amt,amount_expected:exp,member_id:payModal.id,record_id:record.id,month_year:month,worker_id:user.id,adjustment_reason:payReason||null,has_debt:isDebt,debt_amount:isDebt?(exp-amt):0};
+    try{
+      if(online){
+        if(existPay) await PATCH("payments",existPay.id,{amount_received:amt,adjustment_reason:payReason||null,has_debt:isDebt,debt_amount:isDebt?(exp-amt):0});
+        else await POST("payments",payload);
+        await reloadAll();
+        if(isDebt) toast("تم الدفع — دين مسجّل عند المالك","info");
+        else if(hasDiff) toast("تم الدفع بخصم ✓","ok");
+        else toast("تم تسجيل الدفع ✓","ok");
+      } else {
+        if(existPay) addQ({type:"PAY",id:existPay.id,data:{amount_received:amt,adjustment_reason:payReason||null,has_debt:isDebt,debt_amount:isDebt?(exp-amt):0}});
+        else addQ({type:"NEW_PAY",data:payload});
+        const c=getC();
+        if(c.payments){
+          if(existPay) c.payments=c.payments.map(p=>p.id===existPay.id?{...p,amount_received:amt}:p);
+          else c.payments=[...c.payments,{...payload,id:"temp_"+Date.now()}];
+          saveC(c);
+        }
+        toast("حُفظ محلياً ⏳ سيُزامن عند الاتصال","info");
+      }
+      setPayModal(null);setPayAmt("");setPayReason("");
+    }catch(e){toast("خطأ: "+e.message,"err")}
+    finally{setSaving(false)}
+  };
+
+  // Export then Reset
+  const doExport=()=>{
+    const lines=[];
+    lines.push(`سجل: ${record.name}`);
+    lines.push(`الشهر: ${fmy(month)}`);
+    lines.push(`التاريخ: ${todayStr()}`);
+    lines.push(`المولدة: ${gen?.name||"—"}`);
+    lines.push("─".repeat(40));
+    lines.push(`${"الاسم".padEnd(20)}${"أبو الخبطة".padEnd(15)}${"أمبير".padEnd(8)}${"المبلغ".padEnd(12)}الحالة`);
+    lines.push("─".repeat(40));
+    recMembers.forEach(m=>{
+      const pay=getPay(m);
+      const exp=getExpected(m);
+      const rec2=pay?.amount_received||0;
+      const status=isPaid(m)?"مدفوع":isPartial(m)?"جزئي":"غير مدفوع";
+      lines.push(`${(m.name||"").padEnd(20)}${(m.breaker_owner||"").padEnd(15)}${String(m.amperes||0).padEnd(8)}${String(rec2).padEnd(12)}${status}`);
+    });
+    lines.push("─".repeat(40));
+    lines.push(`الإجمالي المحصّل: ${iqd(totalRec)}`);
+    lines.push(`الإجمالي المتوقع: ${iqd(totalExp)}`);
+    lines.push(`نسبة التحصيل: ${totalExp>0?Math.round((totalRec/totalExp)*100):0}%`);
+    const blob=new Blob([lines.join("\n")],{type:"text/plain;charset=utf-8"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=`${record.name}_${month}.txt`;
+    a.click();
+    setExportConfirm(false);
+    setResetConfirm(true);
+  };
+
+  const doReset=async()=>{
+    setSaving(true);
+    try{
+      // Delete all payments for this record this month
+      const delPromises=recPays.map(p=>DEL("payments",p.id));
+      await Promise.all(delPromises);
+      await reloadAll();
+      setResetConfirm(false);
+      toast(`تم تصفير سجل ${record.name} لشهر ${fmy(month)} ✓`,"ok");
+    }catch(e){toast("خطأ في التصفير","err")}
+    finally{setSaving(false)}
+  };
+
+  const canEdit=user.role==="owner"||user.role==="admin";
+
+  return(
+    <div className="fade" style={{display:"flex",flexDirection:"column",gap:14}}>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <button onClick={onBack} className="db db-ghost" style={{padding:"8px 12px",borderRadius:10,fontSize:14}}>← رجوع</button>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:800,fontSize:18,color:"#dce8f5"}}>📁 {record.name}</div>
+          <div style={{color:"#5a7a99",fontSize:12}}>{gen&&`⚡ ${gen.name} · `}{fmy(month)}</div>
+        </div>
+      </div>
+
+      {/* Offline bar */}
+      {!online&&<div style={{background:"rgba(245,166,35,.12)",border:"1px solid rgba(245,166,35,.25)",borderRadius:10,padding:"8px 12px",display:"flex",alignItems:"center",gap:8,fontSize:13,color:"#f5a623",fontWeight:600}}><span className="pulse">📴</span>وضع بدون إنترنت — الدفعات تُحفظ محلياً</div>}
+
+      {/* Stats */}
+      <div className="dc" style={{padding:14}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <span style={{color:"#8ba4c0",fontSize:13}}>إجمالي التحصيل</span>
+          <span style={{fontWeight:900,fontSize:16,color:"#22d07a"}}>{iqd(totalRec)}</span>
+        </div>
+        <div style={{height:6,background:"#1c2a3a",borderRadius:99,overflow:"hidden",marginBottom:10}}>
+          <div style={{height:"100%",width:`${totalExp>0?Math.round((totalRec/totalExp)*100):0}%`,background:"linear-gradient(90deg,#3b82f6,#22d07a)",borderRadius:99}}/>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,textAlign:"center"}}>
+          {[{n:paidCount,l:"مدفوع",c:"#22d07a",bg:"rgba(34,208,122,.08)",b:"rgba(34,208,122,.2)"},{n:partialCount,l:"جزئي",c:"#f5a623",bg:"rgba(245,166,35,.08)",b:"rgba(245,166,35,.2)"},{n:unpaidCount,l:"غير مدفوع",c:"#e84040",bg:"rgba(232,64,64,.08)",b:"rgba(232,64,64,.2)"}].map((s,i)=>(
+            <div key={i} style={{background:s.bg,borderRadius:10,padding:"10px 6px",border:`1px solid ${s.b}`}}>
+              <div style={{color:s.c,fontSize:20,fontWeight:900}}>{s.n}</div>
+              <div style={{color:"#5a7a99",fontSize:11,marginTop:1}}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div style={{display:"flex",gap:8}}>
+        {canEdit&&<button onClick={openAdd} className="db db-blue" style={{flex:1,padding:"11px",fontSize:13}}>+ إضافة مشترك</button>}
+        <button onClick={()=>setExportConfirm(true)} className="db db-amber" style={{flex:1,padding:"11px",fontSize:13}}>📤 تصدير وتصفير</button>
+      </div>
+
+      {/* Search */}
+      <div style={{position:"relative"}}>
+        <span style={{position:"absolute",right:13,top:"50%",transform:"translateY(-50%)",color:"#5a7a99",fontSize:15,pointerEvents:"none"}}>🔍</span>
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="بحث باسم المشترك أو أبو الخبطة..." className="di" style={{paddingRight:42}}/>
+      </div>
+
+      {/* Members list */}
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {filtered.length===0&&<div className="dc" style={{padding:40,textAlign:"center",color:"#5a7a99"}}>لا توجد مشتركين{q&&" مطابقين للبحث"}</div>}
+        {filtered.map(m=>{
+          const pay=getPay(m);
+          const exp=getExpected(m);
+          const rec2=pay?.amount_received||0;
+          const paid=isPaid(m); const partial=isPartial(m);
+          return(
+            <div key={m.id} className="dc" style={{padding:14}}>
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,marginBottom:8}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:2}}>
+                    <div style={{fontWeight:700,fontSize:14,color:"#dce8f5"}}>{m.name}</div>
+                    <span className={`badge ${m.type==="shop"?"bp":"bb"}`} style={{fontSize:10}}>{m.type==="shop"?"محل":"بيت"}</span>
+                  </div>
+                  {m.breaker_owner&&<div style={{color:"#5a7a99",fontSize:12,marginTop:1}}>أبو الخبطة: {m.breaker_owner}</div>}
+                  <div style={{display:"flex",gap:8,marginTop:4,flexWrap:"wrap",alignItems:"center"}}>
+                    <span className={`badge ${paid?"bg":partial?"by":"br"}`}>{paid?"✓ مدفوع":partial?"◑ جزئي":"○ غير مدفوع"}</span>
+                    {m.amperes>0&&<span style={{color:"#5a7a99",fontSize:11}}>⚡ {m.amperes} أمبير</span>}
+                    {!paid&&exp>0&&<span style={{color:"#e84040",fontSize:11,fontWeight:600}}>متبقي: {iqd(exp-rec2)}</span>}
+                  </div>
+                  {m.notes&&<div style={{marginTop:4,color:"#f5a623",fontSize:11}}>📝 {m.notes}</div>}
+                </div>
+                <div style={{display:"flex",gap:6,flexShrink:0,flexDirection:"column",alignItems:"flex-end"}}>
+                  {paid?<div style={{textAlign:"center"}}><div style={{color:"#22d07a",fontWeight:800,fontSize:13}}>{iqd(rec2)}</div><div style={{color:"#5a7a99",fontSize:10}}>مكتمل</div></div>
+                    :<button onClick={()=>openPay(m)} className="db db-green" style={{padding:"8px 12px",fontSize:13,borderRadius:10}}>💰 دفع</button>}
+                  {canEdit&&<div style={{display:"flex",gap:4}}>
+                    <button onClick={()=>openEdit(m)} style={{width:28,height:28,background:"#1c2a3a",border:"1px solid #30363d",borderRadius:8,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
+                    <button onClick={()=>setDelMemberId(m.id)} style={{width:28,height:28,background:"rgba(232,64,64,.08)",border:"1px solid rgba(232,64,64,.18)",borderRadius:8,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑️</button>
+                  </div>}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Add/Edit Member Modal */}
+      {addModal&&(
+        <Modal title={editMember?"تعديل مشترك":"إضافة مشترك"} onClose={()=>!saving&&setAddModal(false)}>
+          <div style={{display:"flex",flexDirection:"column",gap:13}}>
+            <Fld label="اسم المشترك *"><input value={form.name} onChange={e=>fv("name",e.target.value)} placeholder="الاسم الكامل" className="di"/></Fld>
+            <Fld label="نوع الاشتراك">
+              <div style={{display:"flex",gap:8}}>
+                {[["house","🏠 بيت"],["shop","🏪 محل"]].map(([val,lbl])=>(
+                  <button key={val} onClick={()=>fv("type",val)} className="db" type="button" style={{flex:1,padding:"11px",borderRadius:11,background:form.type===val?"rgba(59,158,255,.14)":"#1c2a3a",color:form.type===val?"#3b9eff":"#8ba4c0",border:`1.5px solid ${form.type===val?"rgba(59,158,255,.4)":"#253447"}`,fontSize:14,fontWeight:form.type===val?700:500}}>
+                    {lbl}
+                  </button>
+                ))}
+              </div>
+            </Fld>
+            <Fld label="أبو الخبطة"><input value={form.breaker_owner} onChange={e=>fv("breaker_owner",e.target.value)} placeholder="اسم صاحب الجوزة" className="di"/></Fld>
+            <Fld label="عدد الأمبيرات">
+              <input type="number" value={form.amperes} onChange={e=>fv("amperes",e.target.value)} placeholder="0" className="di"/>
+              {gen&&form.amperes&&(()=>{
+                const amps=parseFloat(form.amperes)||0;
+                const price=form.type==="shop"&&gen.price_per_ampere_shop?gen.price_per_ampere_shop:gen.price_per_ampere_iqd||0;
+                return <div style={{display:"flex",gap:12,marginTop:4}}>
+                  <span style={{color:"#5a7a99",fontSize:11}}>السعر: {iqd(price)}/أمبير</span>
+                  <span style={{color:"#3b9eff",fontSize:11,fontWeight:700}}>المبلغ: {iqd(amps*price)}</span>
+                </div>;
+              })()}
+            </Fld>
+            <Fld label="ملاحظات"><textarea value={form.notes} onChange={e=>fv("notes",e.target.value)} placeholder="أي ملاحظات..." rows={2} className="di" style={{resize:"none"}}/></Fld>
+            {err&&<div style={{background:"rgba(232,64,64,.1)",border:"1px solid rgba(232,64,64,.25)",borderRadius:10,padding:"10px 13px",color:"#f87171",fontSize:13}}>{err}</div>}
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setAddModal(false)} className="db db-ghost" style={{flex:1}}>إلغاء</button>
+              <button onClick={saveMember} disabled={saving} className="db db-blue" style={{flex:1}}>{saving?"جاري...":(editMember?"حفظ":"إضافة")}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Pay Modal */}
+      {payModal&&(()=>{
+        const expAmt=getExpected(payModal);
+        const entAmt=parseFloat(payAmt)||0;
+        const diff=expAmt-entAmt;
+        const hasDiff=diff>0&&entAmt>0;
+        return(
+        <Modal title="تسجيل دفعة" onClose={()=>{setPayModal(null);setPayAmt("");setPayReason("")}}>
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div className="dc" style={{padding:14}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                <div style={{fontWeight:700,fontSize:15,color:"#dce8f5"}}>{payModal.name}</div>
+                <span className={`badge ${payModal.type==="shop"?"bp":"bb"}`} style={{fontSize:10}}>{payModal.type==="shop"?"محل":"بيت"}</span>
+              </div>
+              {payModal.breaker_owner&&<div style={{color:"#5a7a99",fontSize:12}}>أبو الخبطة: {payModal.breaker_owner}</div>}
+              <div style={{background:"rgba(59,158,255,.08)",borderRadius:9,padding:"8px 12px",marginTop:8,border:"1px solid rgba(59,158,255,.15)"}}>
+                <div style={{color:"#5a7a99",fontSize:11}}>المبلغ المطلوب</div>
+                <div style={{color:"#3b9eff",fontWeight:900,fontSize:18}}>{iqd(expAmt)}</div>
+                <div style={{color:"#5a7a99",fontSize:11}}>⚡ {payModal.amperes} أمبير</div>
+              </div>
+            </div>
+            {!online&&<div style={{background:"rgba(245,166,35,.09)",border:"1px solid rgba(245,166,35,.22)",borderRadius:10,padding:"10px 12px",color:"#f5a623",fontSize:13,fontWeight:600}}>● ستُحفظ محلياً وتُزامن لاحقاً</div>}
+            <div>
+              <label style={{color:"#8ba4c0",fontSize:12,fontWeight:700,display:"block",marginBottom:8}}>المبلغ المحصّل (دينار عراقي)</label>
+              <input type="number" value={payAmt} onChange={e=>setPayAmt(e.target.value)}
+                style={{width:"100%",background:"rgba(34,208,122,.06)",border:"2px solid rgba(34,208,122,.25)",borderRadius:12,padding:"16px",fontSize:22,color:"#22d07a",outline:"none",fontFamily:"Cairo",fontWeight:900,boxSizing:"border-box",textAlign:"center"}}
+                onFocus={e=>{e.target.style.borderColor="#22d07a";e.target.style.boxShadow="0 0 0 3px rgba(34,208,122,.1)"}}
+                onBlur={e=>{e.target.style.borderColor="rgba(34,208,122,.25)";e.target.style.boxShadow="none"}}/>
+            </div>
+            {hasDiff&&(
+              <div style={{background:"rgba(59,158,255,.06)",border:"1px solid rgba(59,158,255,.15)",borderRadius:12,padding:12}}>
+                <div style={{color:"#8ba4c0",fontSize:12,fontWeight:700,marginBottom:8}}>النقص: {iqd(diff)} — حدد السبب:</div>
+                <div style={{display:"flex",gap:8,marginBottom:8}}>
+                  <button onClick={()=>setPayReason(payReason==="discount"?"":"discount")} className="db" style={{flex:1,padding:"10px",borderRadius:10,background:payReason==="discount"?"rgba(34,208,122,.12)":"#1c2a3a",color:payReason==="discount"?"#22d07a":"#8ba4c0",border:`1.5px solid ${payReason==="discount"?"rgba(34,208,122,.35)":"#253447"}`,fontSize:13,fontWeight:payReason==="discount"?700:500}}>
+                    خصم
+                  </button>
+                  <button onClick={()=>setPayReason(payReason==="debt"?"":"debt")} className="db" style={{flex:1,padding:"10px",borderRadius:10,background:payReason==="debt"?"rgba(232,64,64,.12)":"#1c2a3a",color:payReason==="debt"?"#e84040":"#8ba4c0",border:`1.5px solid ${payReason==="debt"?"rgba(232,64,64,.35)":"#253447"}`,fontSize:13,fontWeight:payReason==="debt"?700:500}}>
+                    دين
+                  </button>
+                </div>
+                {payReason==="debt"&&<div style={{background:"rgba(232,64,64,.08)",borderRadius:8,padding:"8px 10px",color:"#ff6b6b",fontSize:12,fontWeight:600}}>سيتم تسجيل دين {iqd(diff)} عند المالك والمشرف</div>}
+                {payReason==="discount"&&<div style={{background:"rgba(34,208,122,.07)",borderRadius:8,padding:"8px 10px",color:"#22d07a",fontSize:12}}>خصم — لن يُسجَّل دين</div>}
+                {!payReason&&<div style={{color:"#f5a623",fontSize:12}}>⚠ اختر السبب للمتابعة</div>}
+              </div>
+            )}
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>{setPayModal(null);setPayAmt("");setPayReason("")}} className="db db-ghost" style={{flex:1}}>إلغاء</button>
+              <button onClick={savePay} disabled={saving||!payAmt||(hasDiff&&!payReason)} className="db db-green" style={{flex:1,padding:"13px",fontSize:15}}>
+                {saving?<><span className="spin" style={{width:16,height:16,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block"}}/>جاري...</>:"تأكيد الدفع"}
+              </button>
+            </div>
+          </div>
+        </Modal>
+        );
+      })()}
+
+      {/* Export Confirm */}
+      {exportConfirm&&(
+        <Confirm
+          msg={`تصدير سجل ${record.name}؟`}
+          sub={`سيتم تصدير بيانات ${fmy(month)} كملف نصي، ثم تصفير الدفعات`}
+          onOk={doExport}
+          onNo={()=>setExportConfirm(false)}
+          loading={saving}
+          danger={true}/>
+      )}
+
+      {/* Reset Confirm */}
+      {resetConfirm&&(
+        <Confirm
+          msg={`تصفير دفعات ${fmy(month)}؟`}
+          sub="تم تصدير الملف. هل تريد تصفير جميع الدفعات لهذا الشهر؟"
+          onOk={doReset}
+          onNo={()=>setResetConfirm(false)}
+          loading={saving}
+          danger={true}/>
+      )}
+
+      {delMemberId&&<Confirm msg="حذف هذا المشترك؟" sub="سيتم حذف جميع دفعاته أيضاً" onOk={delMember} onNo={()=>setDelMemberId(null)} loading={delL}/>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// WORKER VIEW
+// ─────────────────────────────────────────────
+function WorkerView({records,members,payments,gens,month,reloadAll,user,toast,online}){
+  const [selRecord,setSelRecord]=useState(null);
+  const [q,setQ]=useState("");
+  const [payModal,setPayModal]=useState(null);
+  const [payAmt,setPayAmt]=useState("");
+  const [payReason,setPayReason]=useState("");
+  const [saving,setSaving]=useState(false);
+
+  // العامل يشوف السجل المخصص له فقط
+  const myRecords=user.assigned_record_id
+    ?records.filter(r=>r.id===user.assigned_record_id)
+    :user.assigned_generator_id
+    ?records.filter(r=>r.generator_id===user.assigned_generator_id)
+    :records;
+
+  const rec=selRecord||myRecords[0];
+  const gen=gens.find(g=>g.id===rec?.generator_id);
+  const recMembers=rec?members.filter(m=>m.record_id===rec.id):[];
+  const recPays=rec?payments.filter(p=>p.record_id===rec.id&&p.month_year===month):[];
+
+  const getPay=m=>recPays.find(p=>p.member_id===m.id);
+  const getExp=m=>{const pay=getPay(m);if(pay?.amount_expected)return pay.amount_expected;if(!gen)return 0;const amps=m.amperes||0;if(m.type==="shop"&&gen.price_per_ampere_shop)return amps*gen.price_per_ampere_shop;return amps*(gen.price_per_ampere_iqd||0)};
+  const isPd=m=>{const pay=getPay(m);return pay&&(pay.amount_received||0)>=getExp(m)&&getExp(m)>0};
+
+  const filtered=recMembers.filter(m=>!q||m.name?.includes(q)||m.breaker_owner?.includes(q));
+  const paid=filtered.filter(m=>isPd(m)).length;
+  const unpaid=filtered.filter(m=>!isPd(m)).length;
+
+  const openPay=m=>{
+    const exp=getExp(m);
+    const pay=getPay(m);
+    setPayAmt(String(exp-(pay?.amount_received||0)));
+    setPayReason("");
+    setPayModal(m);
+  };
+
+  const savePay=async()=>{
+    if(!payModal||!rec)return;
+    const amt=parseFloat(payAmt)||0;
+    const exp=getExp(payModal);
+    const hasDiff=amt<exp&&amt>0;
+    if(hasDiff&&!payReason)return;
+    setSaving(true);
+    const existPay=getPay(payModal);
+    const isDebt=hasDiff&&payReason==="debt";
+    const payload={amount_received:amt,amount_expected:exp,member_id:payModal.id,record_id:rec.id,month_year:month,worker_id:user.id,adjustment_reason:payReason||null,has_debt:isDebt,debt_amount:isDebt?(exp-amt):0};
+    try{
+      if(online){
+        existPay?await PATCH("payments",existPay.id,{amount_received:amt,adjustment_reason:payReason||null,has_debt:isDebt,debt_amount:isDebt?(exp-amt):0}):await POST("payments",payload);
+        await reloadAll();
+        if(isDebt) toast("تم الدفع — دين مسجّل","info");
+        else toast("تم تسجيل الدفع ✓","ok");
+      } else {
+        existPay?addQ({type:"PAY",id:existPay.id,data:{amount_received:amt,adjustment_reason:payReason||null,has_debt:isDebt,debt_amount:isDebt?(exp-amt):0}}):addQ({type:"NEW_PAY",data:payload});
+        toast("حُفظ محلياً ⏳","info");
+      }
+      setPayModal(null);setPayAmt("");setPayReason("");
+    }catch(e){toast("خطأ","err")}
+    finally{setSaving(false)}
+  };
+
+  if(!rec)return <div className="dc" style={{padding:40,textAlign:"center",color:"#5a7a99"}}>لم يتم تخصيص سجل لك بعد</div>;
+
+  return(
+    <div className="fade" style={{display:"flex",flexDirection:"column",gap:14}}>
+      {!online&&<div style={{background:"rgba(245,166,35,.12)",border:"1px solid rgba(245,166,35,.25)",borderRadius:10,padding:"8px 12px",display:"flex",alignItems:"center",gap:8,fontSize:13,color:"#f5a623",fontWeight:600}}><span className="pulse">📴</span>وضع بدون إنترنت</div>}
+
+      {/* Record selector if multiple */}
+      {myRecords.length>1&&(
+        <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4}}>
+          {myRecords.map(r=>(
+            <button key={r.id} onClick={()=>setSelRecord(r)} className="db"
+              style={{padding:"8px 14px",borderRadius:10,background:rec?.id===r.id?"rgba(59,158,255,.2)":"#162030",color:rec?.id===r.id?"#3b9eff":"#8ba4c0",fontSize:13,border:`1px solid ${rec?.id===r.id?"rgba(59,158,255,.35)":"#253447"}`,whiteSpace:"nowrap"}}>
+              📁 {r.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div>
+        <h2 style={{fontWeight:800,fontSize:20,color:"#dce8f5"}}>📁 {rec.name}</h2>
+        <div style={{color:"#5a7a99",fontSize:13}}>{gen&&`⚡ ${gen.name} · `}{fmy(month)}</div>
+      </div>
+
+      {/* Quick stats */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        <div style={{background:"rgba(34,208,122,.08)",borderRadius:12,padding:"12px",textAlign:"center",border:"1px solid rgba(34,208,122,.2)"}}>
+          <div style={{color:"#22d07a",fontSize:22,fontWeight:900}}>{paid}</div>
+          <div style={{color:"#5a7a99",fontSize:12}}>دفعوا ✓</div>
+        </div>
+        <div style={{background:"rgba(232,64,64,.08)",borderRadius:12,padding:"12px",textAlign:"center",border:"1px solid rgba(232,64,64,.2)"}}>
+          <div style={{color:"#e84040",fontSize:22,fontWeight:900}}>{unpaid}</div>
+          <div style={{color:"#5a7a99",fontSize:12}}>لم يدفعوا</div>
+        </div>
+      </div>
+
+      <div style={{position:"relative"}}>
+        <span style={{position:"absolute",right:13,top:"50%",transform:"translateY(-50%)",color:"#5a7a99",fontSize:15,pointerEvents:"none"}}>🔍</span>
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="بحث عن اسم المشترك..." className="di" style={{paddingRight:42,fontSize:15}}/>
+      </div>
+
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {filtered.map(m=>{
+          const pay=getPay(m);
+          const exp=getExp(m);
+          const pd=isPd(m);
+          return(
+            <div key={m.id} className="dc" style={{padding:13,display:"flex",alignItems:"center",gap:12}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:700,fontSize:14,color:"#dce8f5"}}>{m.name}</div>
+                {m.breaker_owner&&<div style={{color:"#5a7a99",fontSize:12}}>أبو الخبطة: {m.breaker_owner}</div>}
+                <div style={{display:"flex",gap:6,marginTop:3,alignItems:"center"}}>
+                  <span className={`badge ${pd?"bg":"br"}`}>{pd?"✓ دفع":"○ لم يدفع"}</span>
+                  {m.amperes>0&&<span style={{color:"#5a7a99",fontSize:11}}>⚡ {m.amperes} أمبير</span>}
+                </div>
+              </div>
+              {pd
+                ?<div style={{textAlign:"left",flexShrink:0}}><div style={{color:"#22d07a",fontWeight:900,fontSize:14}}>{iqd(pay?.amount_received||0)}</div></div>
+                :<button onClick={()=>openPay(m)} className="db db-green" style={{padding:"10px 14px",fontSize:14,flexShrink:0,borderRadius:10}}>💰 دفع</button>}
+            </div>
+          );
+        })}
+      </div>
+
+      {payModal&&(()=>{
+        const expAmt=getExp(payModal);
+        const entAmt=parseFloat(payAmt)||0;
+        const diff=expAmt-entAmt;
+        const hasDiff=diff>0&&entAmt>0;
+        return(
+        <Modal title="تسجيل دفعة" onClose={()=>{setPayModal(null);setPayAmt("");setPayReason("")}}>
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div className="dc" style={{padding:14}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                <div style={{fontWeight:700,fontSize:15,color:"#dce8f5"}}>{payModal.name}</div>
+                <span className={`badge ${payModal.type==="shop"?"bp":"bb"}`} style={{fontSize:10}}>{payModal.type==="shop"?"محل":"بيت"}</span>
+              </div>
+              {payModal.breaker_owner&&<div style={{color:"#5a7a99",fontSize:12}}>أبو الخبطة: {payModal.breaker_owner}</div>}
+              <div style={{background:"rgba(59,158,255,.08)",borderRadius:9,padding:"8px 12px",marginTop:8,border:"1px solid rgba(59,158,255,.15)"}}>
+                <div style={{color:"#5a7a99",fontSize:11}}>المبلغ المطلوب</div>
+                <div style={{color:"#3b9eff",fontWeight:900,fontSize:18}}>{iqd(expAmt)}</div>
+              </div>
+            </div>
+            {!online&&<div style={{background:"rgba(245,166,35,.09)",border:"1px solid rgba(245,166,35,.22)",borderRadius:10,padding:"10px 12px",color:"#f5a623",fontSize:13,fontWeight:600}}>● ستُحفظ محلياً وتُزامن لاحقاً</div>}
+            <div>
+              <label style={{color:"#8ba4c0",fontSize:12,fontWeight:700,display:"block",marginBottom:8}}>المبلغ المحصّل</label>
+              <input type="number" value={payAmt} onChange={e=>setPayAmt(e.target.value)}
+                style={{width:"100%",background:"rgba(34,208,122,.06)",border:"2px solid rgba(34,208,122,.25)",borderRadius:12,padding:"18px",fontSize:24,color:"#22d07a",outline:"none",fontFamily:"Cairo",fontWeight:900,boxSizing:"border-box",textAlign:"center"}}
+                onFocus={e=>e.target.style.borderColor="#22d07a"} onBlur={e=>e.target.style.borderColor="rgba(34,208,122,.25)"}/>
+            </div>
+            {hasDiff&&(
+              <div style={{background:"rgba(59,158,255,.06)",border:"1px solid rgba(59,158,255,.15)",borderRadius:12,padding:12}}>
+                <div style={{color:"#8ba4c0",fontSize:12,fontWeight:700,marginBottom:8}}>النقص: {iqd(diff)} — حدد السبب:</div>
+                <div style={{display:"flex",gap:8,marginBottom:8}}>
+                  <button onClick={()=>setPayReason(payReason==="discount"?"":"discount")} className="db" style={{flex:1,padding:"10px",borderRadius:10,background:payReason==="discount"?"rgba(34,208,122,.12)":"#1c2a3a",color:payReason==="discount"?"#22d07a":"#8ba4c0",border:`1.5px solid ${payReason==="discount"?"rgba(34,208,122,.35)":"#253447"}`,fontSize:13,fontWeight:payReason==="discount"?700:500}}>خصم</button>
+                  <button onClick={()=>setPayReason(payReason==="debt"?"":"debt")} className="db" style={{flex:1,padding:"10px",borderRadius:10,background:payReason==="debt"?"rgba(232,64,64,.12)":"#1c2a3a",color:payReason==="debt"?"#e84040":"#8ba4c0",border:`1.5px solid ${payReason==="debt"?"rgba(232,64,64,.35)":"#253447"}`,fontSize:13,fontWeight:payReason==="debt"?700:500}}>دين</button>
+                </div>
+                {payReason==="debt"&&<div style={{background:"rgba(232,64,64,.08)",borderRadius:8,padding:"8px 10px",color:"#ff6b6b",fontSize:12,fontWeight:600}}>سيتم تسجيل دين {iqd(diff)} عند المالك والمشرف</div>}
+                {payReason==="discount"&&<div style={{background:"rgba(34,208,122,.07)",borderRadius:8,padding:"8px 10px",color:"#22d07a",fontSize:12}}>خصم — لن يُسجَّل دين</div>}
+                {!payReason&&<div style={{color:"#f5a623",fontSize:12}}>⚠ اختر السبب للمتابعة</div>}
+              </div>
+            )}
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>{setPayModal(null);setPayAmt("");setPayReason("")}} className="db db-ghost" style={{flex:1}}>إلغاء</button>
+              <button onClick={savePay} disabled={saving||!payAmt||(hasDiff&&!payReason)} className="db db-green" style={{flex:1,padding:"14px",fontSize:15}}>
+                {saving?"جاري...":"تأكيد الدفع"}
+              </button>
+            </div>
+          </div>
+        </Modal>
+        );
+      })()}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// HISTORY
+// ─────────────────────────────────────────────
+function History({records,members,payments,gens}){
+  const [fR,setFR]=useState("all"); const [fY,setFY]=useState("all");
+  const years=[...new Set(payments.map(p=>p.month_year?.split("-")[0]))].filter(Boolean).sort().reverse();
+  const fil=payments.filter(p=>{
+    if(fR!=="all"&&p.record_id!==fR)return false;
+    if(fY!=="all"&&!p.month_year?.startsWith(fY))return false;
+    return true;
+  });
+  const byM={};
+  fil.forEach(p=>{if(!byM[p.month_year])byM[p.month_year]={exp:0,rec:0,n:0};byM[p.month_year].exp+=p.amount_expected||0;byM[p.month_year].rec+=p.amount_received||0;byM[p.month_year].n++});
+  let rows=Object.entries(byM).sort((a,b)=>b[0].localeCompare(a[0]));rows=qH?rows.filter(([my])=>fmy(my).includes(qH)):rows;
+  const total=fil.reduce((a,p)=>a+(p.amount_received||0),0);
+  const [qH,setQH]=useState("");
+  return(
+    <div className="fade" style={{display:"flex",flexDirection:"column",gap:14}}>
+      <h2 style={{fontWeight:800,fontSize:20,color:"#dce8f5"}}>التاريخ المالي</h2>
+      <div style={{display:"flex",gap:8}}>
+        <select value={fR} onChange={e=>setFR(e.target.value)} className="ds" style={{flex:1}}>
+          <option value="all">كل السجلات</option>
+          {records.map(r=><option key={r.id} value={r.id}>📁 {r.name}</option>)}
+        </select>
+        <select value={fY} onChange={e=>setFY(e.target.value)} className="ds" style={{flex:1}}>
+          <option value="all">كل السنوات</option>
+          {years.map(y=><option key={y} value={y}>{y}</option>)}
+        </select>
+      </div>
+      <div style={{position:"relative"}}>
+        <span style={{position:"absolute",right:13,top:"50%",transform:"translateY(-50%)",color:"#5a7a99",pointerEvents:"none",fontSize:14}}>🔍</span>
+        <input value={qH} onChange={e=>setQH(e.target.value)} placeholder="بحث في الأشهر..." className="di" style={{paddingRight:42}}/>
+      </div>
+      <div style={{background:"linear-gradient(135deg,#1a2e44,#1a3a7a)",borderRadius:16,padding:"17px 18px",border:"1px solid rgba(59,158,255,.2)"}}>
+        <div style={{color:"#93c5fd",fontSize:12,marginBottom:3}}>إجمالي الإيرادات</div>
+        <div style={{fontWeight:900,fontSize:26,color:"#dce8f5"}}>{iqd(total)}</div>
+        <div style={{color:"#5a7a99",fontSize:12,marginTop:3}}>{fil.length} دفعة مسجلة</div>
+      </div>
+      {rows.length===0&&<div className="dc" style={{padding:40,textAlign:"center",color:"#5a7a99"}}>لا توجد بيانات</div>}
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {rows.map(([my,d])=>{
+          const pct=d.exp>0?Math.round((d.rec/d.exp)*100):0;
+          return(
+            <div key={my} className="dc" style={{padding:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <div><div style={{fontWeight:700,fontSize:14,color:"#dce8f5"}}>{fmy(my)}</div><div style={{color:"#5a7a99",fontSize:12}}>{d.n} دفعة</div></div>
+                <span className={`badge ${pct>=100?"bg":"by"}`}>{pct}%</span>
+              </div>
+              <div style={{height:5,background:"#1c2a3a",borderRadius:99,overflow:"hidden",marginBottom:10}}>
+                <div style={{height:"100%",width:`${pct}%`,background:pct>=100?"linear-gradient(90deg,#22d07a,#17a35c)":"linear-gradient(90deg,#3b82f6,#60a5fa)",borderRadius:99}}/>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,textAlign:"center"}}>
+                <div style={{background:"#0f1923",borderRadius:10,padding:"7px 4px",border:"1px solid #21262d"}}><div style={{color:"#5a7a99",fontSize:10}}>المتوقع</div><div style={{fontWeight:800,color:"#8ba4c0",fontSize:12}}>{(d.exp/1000).toFixed(0)}K</div></div>
+                <div style={{background:"rgba(34,208,122,.05)",borderRadius:10,padding:"7px 4px",border:"1px solid rgba(34,208,122,.18)"}}><div style={{color:"#22d07a",fontSize:10}}>المحصّل</div><div style={{fontWeight:800,color:"#22d07a",fontSize:12}}>{(d.rec/1000).toFixed(0)}K</div></div>
+                <div style={{background:"rgba(232,64,64,.05)",borderRadius:10,padding:"7px 4px",border:"1px solid rgba(232,64,64,.18)"}}><div style={{color:"#e84040",fontSize:10}}>المتبقي</div><div style={{fontWeight:800,color:"#e84040",fontSize:12}}>{((d.exp-d.rec)/1000).toFixed(0)}K</div></div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// MORE SETTINGS
+// ─────────────────────────────────────────────
+function More({gens,users,records,reload,me,toast}){
+  const [t2,setT2]=useState("generators");
+  const [qMore,setQMore]=useState("");
+  const [modal,setModal]=useState(false); const [ed,setEd]=useState(null);
+  const [delId,setDelId]=useState(null); const [saving,setSaving]=useState(false);
+  const [delL,setDelL]=useState(false); const [err,setErr]=useState("");
+  const [showP,setShowP]=useState(false);
+  const [form,setForm]=useState({name:"",location:"",price_per_ampere_iqd:"",price_per_ampere_shop:"",username:"",password:"",role:"worker",assigned_generator_id:"",assigned_record_id:""});
+  const fv=(k,v)=>setForm(f=>({...f,[k]:v}));
+
+  const openAddGen=()=>{setForm({name:"",location:"",price_per_ampere_iqd:"",price_per_ampere_shop:""});setEd(null);setErr("");setModal("gen")};
+  const openEditGen=g=>{setForm({name:g.name,location:g.location||"",price_per_ampere_iqd:String(g.price_per_ampere_iqd),price_per_ampere_shop:String(g.price_per_ampere_shop||"")});setEd(g);setErr("");setModal("gen")};
+  const openAddUser=()=>{setForm({name:"",username:"",password:"",role:"worker",assigned_generator_id:"",assigned_record_id:""});setEd(null);setErr("");setShowP(false);setModal("user")};
+  const openEditUser=u=>{setForm({name:u.name,username:u.username,password:"",role:u.role,assigned_generator_id:u.assigned_generator_id||"",assigned_record_id:u.assigned_record_id||""});setEd(u);setErr("");setShowP(false);setModal("user")};
+
+  const saveGen=async()=>{
+    if(!form.name.trim()||!form.price_per_ampere_iqd){setErr("اسم المولدة والسعر مطلوبان");return}
+    const price=Number(form.price_per_ampere_iqd);if(!price||price<=0){setErr("السعر غير صحيح");return}
+    setSaving(true);setErr("");
+    try{
+      const shopPrice=Number(form.price_per_ampere_shop)||price;
+      const pl={name:form.name.trim(),location:form.location.trim(),price_per_ampere_iqd:price,price_per_ampere_shop:shopPrice,owner_id:me.id};
+      ed?await PATCH("generators",ed.id,pl):await POST("generators",pl);
+      await reload();setModal(false);toast("تم ✓","ok");
+    }catch(e){setErr("خطأ: "+e.message)}finally{setSaving(false)}
+  };
+
+  const saveUser=async()=>{
+    if(!form.name.trim()||!form.username.trim()){setErr("الاسم واسم المستخدم مطلوبان");return}
+    if(!ed&&!form.password.trim()){setErr("كلمة المرور مطلوبة");return}
+    const dup=users.find(u=>u.username===form.username.trim()&&(!ed||u.id!==ed.id));
+    if(dup){setErr("اسم المستخدم موجود");return}
+    setSaving(true);setErr("");
+    try{
+      const pl={name:form.name.trim(),username:form.username.trim(),role:form.role,assigned_generator_id:form.assigned_generator_id||null,assigned_record_id:form.assigned_record_id||null,...(form.password.trim()?{password:form.password.trim()}:{})};
+      ed?await PATCH("users",ed.id,pl):await POST("users",{...pl,password:form.password.trim()});
+      await reload();setModal(false);toast("تم ✓","ok");
+    }catch(e){setErr("خطأ: "+e.message)}finally{setSaving(false)}
+  };
+
+  const doDel=async()=>{
+    setDelL(true);
+    try{t2==="generators"?await DEL("generators",delId):await DEL("users",delId);await reload();setDelId(null);toast("تم الحذف","ok")}
+    catch(e){toast("خطأ","err")}finally{setDelL(false)}
+  };
+
+  const RI={owner:{l:"مالك",i:"👑",c:"bb"},admin:{l:"مشرف",i:"🛡️",c:"bb"},worker:{l:"عامل",i:"🔧",c:"bg"}};
+
+  return(
+    <div className="fade" style={{display:"flex",flexDirection:"column",gap:14}}>
+      <h2 style={{fontWeight:800,fontSize:20,color:"#dce8f5"}}>الإعدادات</h2>
+      <div style={{display:"flex",background:"#0f1923",borderRadius:12,padding:3,border:"1px solid #253447",gap:3}}>
+        {[["generators","المولدات"],["users","المستخدمون"]].map(([id,lbl])=>(
+          <button key={id} onClick={()=>{setT2(id);setQMore("");}} className="db"
+            style={{flex:1,padding:"9px",borderRadius:10,background:t2===id?"#162030":"transparent",color:t2===id?"#dce8f5":"#5a7a99",fontSize:13,border:t2===id?"1px solid #253447":"1px solid transparent"}}>
+            {lbl}
+          </button>
+        ))}
+      </div>
+      <div style={{position:"relative"}}>
+        <span style={{position:"absolute",right:13,top:"50%",transform:"translateY(-50%)",color:"#5a7a99",pointerEvents:"none",fontSize:14}}>🔍</span>
+        <input value={qMore} onChange={e=>setQMore(e.target.value)} placeholder={t2==="generators"?"بحث في المولدات...":"بحث في المستخدمين..."} className="di" style={{paddingRight:42}}/>
+      </div>
+
+      {t2==="generators"&&(
+        <>
+          <button onClick={openAddGen} className="db db-blue" style={{width:"100%",padding:"12px",fontSize:13}}>+ إضافة مولدة</button>
+          {gens.length===0&&<div className="dc" style={{padding:40,textAlign:"center",color:"#5a7a99"}}>لا توجد مولدات</div>}
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {gens.map(g=>(
+              <div key={g.id} className="dc" style={{padding:14,display:"flex",alignItems:"center",gap:12}}>
+                <div style={{width:42,height:42,background:"rgba(59,158,255,.1)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,border:"1px solid rgba(59,158,255,.18)"}}>⚡</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:700,fontSize:14,color:"#dce8f5"}}>{g.name}</div>
+                  {g.location&&<div style={{color:"#5a7a99",fontSize:12}}>📍 {g.location}</div>}
+                  <div style={{display:"flex",gap:10,marginTop:2,flexWrap:"wrap"}}><span style={{color:"#5a7a99",fontSize:11}}>🏠 {iqd(g.price_per_ampere_iqd)}/أمبير</span>{g.price_per_ampere_shop&&g.price_per_ampere_shop!==g.price_per_ampere_iqd&&<span style={{color:"#9b6dff",fontSize:11}}>🏪 {iqd(g.price_per_ampere_shop)}/أمبير</span>}</div>
+                </div>
+                <div style={{display:"flex",gap:6}}>
+                  <button onClick={()=>openEditGen(g)} style={{width:32,height:32,background:"#1c2a3a",border:"1px solid #30363d",borderRadius:9,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
+                  <button onClick={()=>setDelId(g.id)} style={{width:32,height:32,background:"rgba(232,64,64,.08)",border:"1px solid rgba(232,64,64,.18)",borderRadius:9,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑️</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {t2==="users"&&(
+        <>
+          <button onClick={openAddUser} className="db db-blue" style={{width:"100%",padding:"12px",fontSize:13}}>+ إضافة مستخدم</button>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {(qMore?users.filter(u=>u.name?.includes(qMore)||u.username?.includes(qMore)):users).map(u=>{
+              const ri=RI[u.role]||RI.worker;
+              const gen=gens.find(g=>g.id===u.assigned_generator_id);
+              const rec=records.find(r=>r.id===u.assigned_record_id);
+              return(
+                <div key={u.id} className="dc" style={{padding:14,display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:42,height:42,background:"rgba(59,158,255,.1)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,border:"1px solid rgba(59,158,255,.18)"}}>{ri.i}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
+                      <span style={{fontWeight:700,fontSize:13,color:"#dce8f5"}}>{u.name}</span>
+                      <span className={`badge ${ri.c}`}>{ri.l}</span>
+                    </div>
+                    <div style={{color:"#5a7a99",fontSize:12}}>@{u.username}</div>
+                    {gen&&<div style={{color:"#5a7a99",fontSize:11}}>⚡ {gen.name}</div>}
+                    {rec&&<div style={{color:"#5a7a99",fontSize:11}}>📁 {rec.name}</div>}
+                  </div>
+                  {u.role!=="owner"&&(
+                    <div style={{display:"flex",gap:6}}>
+                      <button onClick={()=>openEditUser(u)} style={{width:32,height:32,background:"#1c2a3a",border:"1px solid #30363d",borderRadius:9,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
+                      <button onClick={()=>setDelId(u.id)} style={{width:32,height:32,background:"rgba(232,64,64,.08)",border:"1px solid rgba(232,64,64,.18)",borderRadius:9,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑️</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {modal==="gen"&&(
+        <Modal title={ed?"تعديل المولدة":"مولدة جديدة"} onClose={()=>!saving&&setModal(false)}>
+          <div style={{display:"flex",flexDirection:"column",gap:13}}>
+            <Fld label="اسم المولدة *"><input value={form.name} onChange={e=>fv("name",e.target.value)} placeholder="مولدة حي الرشيد" className="di"/></Fld>
+            <Fld label="الموقع"><input value={form.location} onChange={e=>fv("location",e.target.value)} placeholder="شارع، حي، مدينة" className="di"/></Fld>
+            <Fld label="سعر أمبير البيت (د.ع) *" hint="🏠"><input type="number" value={form.price_per_ampere_iqd} onChange={e=>fv("price_per_ampere_iqd",e.target.value)} placeholder="15000" className="di"/></Fld>
+            <Fld label="سعر أمبير المحل (د.ع)" hint="🏪 اتركه فارغاً لاستخدام سعر البيت"><input type="number" value={form.price_per_ampere_shop||""} onChange={e=>fv("price_per_ampere_shop",e.target.value)} placeholder="20000" className="di"/></Fld>
+            {err&&<div style={{background:"rgba(232,64,64,.1)",border:"1px solid rgba(232,64,64,.25)",borderRadius:10,padding:"10px 13px",color:"#f87171",fontSize:13}}>{err}</div>}
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setModal(false)} className="db db-ghost" style={{flex:1}}>إلغاء</button>
+              <button onClick={saveGen} disabled={saving} className="db db-blue" style={{flex:1}}>{saving?"جاري...":(ed?"حفظ":"إضافة")}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {modal==="user"&&(
+        <Modal title={ed?"تعديل مستخدم":"مستخدم جديد"} onClose={()=>!saving&&setModal(false)}>
+          <div style={{display:"flex",flexDirection:"column",gap:13}}>
+            <Fld label="الاسم الكامل *"><input value={form.name} onChange={e=>fv("name",e.target.value)} placeholder="الاسم الكامل" className="di"/></Fld>
+            <Fld label="اسم الدخول *"><input value={form.username} onChange={e=>fv("username",e.target.value)} placeholder="username" className="di" style={{direction:"ltr",textAlign:"right"}}/></Fld>
+            <Fld label={`كلمة المرور${!ed?" *":""}`} hint={ed?"(اتركه فارغاً)":undefined}>
+              <div style={{position:"relative"}}>
+                <input type={showP?"text":"password"} value={form.password} onChange={e=>fv("password",e.target.value)} placeholder="كلمة المرور" className="di" style={{paddingLeft:42}}/>
+                <button onClick={()=>setShowP(s=>!s)} style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#5a7a99",fontSize:16}}>{showP?"🙈":"👁️"}</button>
+              </div>
+            </Fld>
+            <Fld label="الصلاحية *">
+              <select value={form.role} onChange={e=>fv("role",e.target.value)} className="ds">
+                <option value="admin">مشرف (Admin)</option>
+                <option value="worker">عامل (Worker)</option>
+              </select>
+            </Fld>
+            <Fld label="المولدة المخصصة">
+              <select value={form.assigned_generator_id} onChange={e=>fv("assigned_generator_id",e.target.value)} className="ds">
+                <option value="">— بدون مولدة —</option>
+                {gens.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
+            </Fld>
+            <Fld label="السجل المخصص">
+              <select value={form.assigned_record_id} onChange={e=>fv("assigned_record_id",e.target.value)} className="ds">
+                <option value="">— بدون سجل —</option>
+                {records.map(r=><option key={r.id} value={r.id}>📁 {r.name}</option>)}
+              </select>
+            </Fld>
+            {err&&<div style={{background:"rgba(232,64,64,.1)",border:"1px solid rgba(232,64,64,.25)",borderRadius:10,padding:"10px 13px",color:"#f87171",fontSize:13}}>{err}</div>}
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setModal(false)} className="db db-ghost" style={{flex:1}}>إلغاء</button>
+              <button onClick={saveUser} disabled={saving} className="db db-blue" style={{flex:1}}>{saving?"جاري...":(ed?"حفظ":"إضافة")}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {delId&&<Confirm msg={t2==="generators"?"حذف هذه المولدة؟":"حذف هذا المستخدم؟"} onOk={doDel} onNo={()=>setDelId(null)} loading={delL}/>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// NAV CONFIG
+// ─────────────────────────────────────────────
+const NAV={
+  owner:[{id:"records",label:"السجلات"},{id:"history",label:"التاريخ"},{id:"more",label:"الإعدادات"}],
+  admin:[{id:"records",label:"السجلات"},{id:"history",label:"التاريخ"},{id:"more",label:"الإعدادات"}],
+  worker:[{id:"collect",label:"الجباية"},{id:"history",label:"التاريخ"}],
+};
+const NAV_ICONS={
+  records:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>,
+  collect:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>,
+  history:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+  more:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>,
+};
+
+// ─────────────────────────────────────────────
+// ROOT APP
+// ─────────────────────────────────────────────
+function App(){
+  const [user,setUser]=useState(null); const [tab,setTab]=useState(null);
+  const [authLoad,setAuthLoad]=useState(false); const [authErr,setAuthErr]=useState("");
+  const [users,setUsers]=useState([]); const [gens,setGens]=useState([]);
+  const [records,setRecords]=useState([]); const [members,setMembers]=useState([]);
+  const [payments,setPayments]=useState([]);
+  const [dataLoad,setDataLoad]=useState(false); const [dataErr,setDataErr]=useState("");
+  const [checking,setChecking]=useState(true);
+  const [toasts,setToasts]=useState([]); const [sidebar,setSidebar]=useState(false);
+  const [queueLen,setQueueLen]=useState(0); const [syncing,setSyncing]=useState(false);
+  const [month,setMonth]=useState(nowM());
+  const [openRecord,setOpenRecord]=useState(null); // for owner navigating into a record
+  const online=useOnline();
+
+  const toast=(msg,type="ok")=>{
+    const id=Date.now()+Math.random();
+    setToasts(q=>[...q,{msg,type,id}]);
+    setTimeout(()=>setToasts(q=>q.filter(t=>t.id!==id)),3200);
+  };
+
+  // Queue tracker
+  useEffect(()=>{const t=setInterval(()=>setQueueLen(getQ().length),2000);setQueueLen(getQ().length);return()=>clearInterval(t)},[]);
+
+  // Auto sync
+  useEffect(()=>{
+    if(online&&queueLen>0&&!syncing){
+      setSyncing(true);
+      doSync().then(n=>{if(n>0){toast(`تمت مزامنة ${n} عملية ✓`,"ok");loadPayments();}}).finally(()=>setSyncing(false));
+    }
+  },[online,queueLen]);
+
+  // Restore session
+  useEffect(()=>{
+    try{const s=localStorage.getItem("mwu4");if(s){const u=JSON.parse(s);setUser(u);setTab(NAV[u.role]?.[0]?.id)}}catch{}
+    setChecking(false);
+  },[]);
+
+  const loadAll=useCallback(async()=>{
+    setDataLoad(true);setDataErr("");
+    try{
+      const [u,g,rec,mem,pay]=await Promise.all([
+        GET("users","order=created_at.asc"),
+        GET("generators","order=created_at.asc"),
+        GET("records","order=created_at.asc").catch(()=>[]),
+        GET("members","order=created_at.asc").catch(()=>[]),
+        GET("payments","order=created_at.desc").catch(()=>[]),
+      ]);
+      setUsers(u);setGens(g);setRecords(rec||[]);setMembers(mem||[]);setPayments(pay||[]);
+      saveC({users:u,generators:g,records:rec||[],members:mem||[],payments:pay||[]});
+    }catch(e){
+      const c=getC();
+      if(c.users){setUsers(c.users||[]);setGens(c.generators||[]);setRecords(c.records||[]);setMembers(c.members||[]);setPayments(c.payments||[]);setDataErr("وضع أوفلاين — بيانات محفوظة محلياً");}
+      else setDataErr("تعذّر تحميل البيانات");
+    }finally{setDataLoad(false)}
+  },[]);
+
+  const loadPayments=useCallback(async()=>{
+    try{const p=await GET("payments","order=created_at.desc");setPayments(p);const c=getC();saveC({...c,payments:p});}catch{}
+  },[]);
+
+  useEffect(()=>{if(user)loadAll()},[user]);
+
+  const login=async(u,p)=>{
+    setAuthLoad(true);setAuthErr("");
+    try{
+      if(navigator.onLine){
+        const rows=await GET("users",`username=eq.${encodeURIComponent(u)}&password=eq.${encodeURIComponent(p)}&limit=1`);
+        if(rows.length>0){localStorage.setItem("mwu4",JSON.stringify(rows[0]));setUser(rows[0]);setTab(NAV[rows[0].role]?.[0]?.id);}
+        else setAuthErr("اسم المستخدم أو كلمة المرور غير صحيحة");
+      } else {
+        const c=getC();
+        const found=(c.users||[]).find(x=>x.username===u&&x.password===p);
+        if(found){setUser(found);setTab(NAV[found.role]?.[0]?.id);}
+        else setAuthErr("لا يمكن تسجيل الدخول بدون إنترنت في المرة الأولى");
+      }
+    }catch(e){setAuthErr("تعذّر الاتصال: "+e.message)}
+    finally{setAuthLoad(false)}
+  };
+
+  const logout=()=>{localStorage.removeItem("mwu4");setUser(null);setTab(null);setOpenRecord(null);};
+
+  if(checking)return(
+    <div style={{minHeight:"100vh",background:"#0f1923",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{textAlign:"center"}}>
+        <div style={{width:68,height:68,background:"linear-gradient(135deg,#1a3a5c,#1a5aad)",borderRadius:20,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",border:"1px solid rgba(59,158,255,.3)"}}>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b9eff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div className="spin" style={{width:22,height:22,border:"2.5px solid #21262d",borderTopColor:"#3b9eff",borderRadius:"50%",margin:"0 auto"}}/>
+      </div>
+    </div>
+  );
+
+  if(!user)return <Login onLogin={login} loading={authLoad} error={authErr}/>;
+
+  const navItems=NAV[user.role]||NAV.worker;
+
+  const screen=()=>{
+    if(dataLoad)return(
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"80px 0",gap:12}}>
+        <div className="spin" style={{width:26,height:26,border:"3px solid #21262d",borderTopColor:"#3b9eff",borderRadius:"50%"}}/>
+        <div style={{color:"#5a7a99",fontSize:14}}>جاري تحميل البيانات...</div>
+      </div>
+    );
+    if(dataErr&&!records.length)return(
+      <div className="dc" style={{padding:18,display:"flex",gap:12,alignItems:"center",margin:"8px 0"}}>
+        <span style={{fontSize:18}}>⚠️</span>
+        <div style={{flex:1,color:"#f5a623",fontSize:13,fontWeight:600}}>{dataErr}</div>
+        <button onClick={loadAll} className="db db-blue" style={{padding:"7px 12px",fontSize:12}}>إعادة</button>
+      </div>
+    );
+
+    // Owner/Admin: if openRecord, show detail
+    if(openRecord&&(user.role==="owner"||user.role==="admin")){
+      return <RecordDetail
+        record={openRecord} members={members} payments={payments}
+        gens={gens} month={month} reloadAll={loadAll}
+        user={user} toast={toast} online={online} queueLen={queueLen}
+        onBack={()=>setOpenRecord(null)}/>;
+    }
+
+    switch(tab){
+      case "records": return <RecordsScreen records={records} members={members} payments={payments} gens={gens} month={month} setMonth={setMonth} onOpenRecord={r=>{setOpenRecord(r);}} reload={loadAll} me={user} toast={toast}/>;
+      case "collect": return <WorkerView records={records} members={members} payments={payments} gens={gens} month={month} reloadAll={loadAll} user={user} toast={toast} online={online}/>;
+      case "history": return <History records={records} members={members} payments={payments} gens={gens}/>;
+      case "more":    return <More gens={gens} users={users} records={records} reload={loadAll} me={user} toast={toast}/>;
+      default: return null;
+    }
+  };
+
+  return(
+    <div style={{minHeight:"100vh",background:"#0f1923",maxWidth:480,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+      <Toast items={toasts}/>
+      {sidebar&&<Sidebar user={user} tab={tab} setTab={t=>{setTab(t);setOpenRecord(null)}} navItems={navItems} onLogout={logout} onClose={()=>setSidebar(false)} gens={gens} queueLen={queueLen}/>}
+
+      {/* Header */}
+      <div style={{background:"#162030",borderBottom:"1px solid #253447",padding:"11px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:30}}>
+        <button onClick={()=>setSidebar(true)} style={{background:"none",border:"none",cursor:"pointer",color:"#dce8f5",padding:4,lineHeight:1}}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontWeight:900,fontSize:20,color:"#dce8f5"}}>مولدتي</span>
+          {!online&&<span className="badge by pulse">📴 أوفلاين</span>}
+          {online&&queueLen>0&&<span className="badge by pulse">⏳ {queueLen}</span>}
+        </div>
+        <button onClick={online?loadAll:()=>toast("لا يوجد اتصال","info")} style={{background:"none",border:"none",cursor:"pointer",color:online?"#5a7a99":"#253447",padding:4,lineHeight:1}}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </button>
+      </div>
+
+      <div style={{flex:1,overflowY:"auto",padding:"14px 14px 90px"}}>{screen()}</div>
+
+      {/* Bottom Nav — hide when in record detail */}
+      {!openRecord&&(
+        <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"#162030",borderTop:"1px solid #30363d",zIndex:30}}>
+          <div style={{display:"flex",padding:"5px 6px 10px"}}>
+            {navItems.map(item=>{
+              const active=tab===item.id;
+              return(
+                <button key={item.id} onClick={()=>{setTab(item.id);setOpenRecord(null)}} className={`nav-btn ${active?"on":""}`}>
+                  <span style={{lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center"}}>{NAV_ICONS[item.id]}</span>
+                  <span style={{fontSize:10,fontWeight:700,lineHeight:1}}>{item.label}</span>
+                  {active&&<span style={{width:4,height:4,background:"#3b9eff",borderRadius:"50%"}}/>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
